@@ -34,9 +34,9 @@ function Components( com ) {
                 children[k] = child[k]
             }
         }
-        attr.children = children
-        reload = () => com(attr)
-        const vdom = com(attr)
+        // attr.children = children
+        reload = () => com.call({data:attr, children})
+        const vdom = com.call({data:attr, children})
         // chook = hooks
         // prhooks.pre = hooks
         // hooks = prhooks
@@ -80,30 +80,31 @@ function dom( attr, ...child ) {
     }
 }
 
-function Children1({a, children}) {
+function Children1() {
     const [i1,set] = useState(1)
     return (
         dom({ class:() => {
-            return a + 1 
+            return this.data.a + 1 
         } },
-            () => children
+            () => this.children
         )
     )
 }
 
 let Children = Components(Children1)
 // let i1 = 999
-function Children2({a, children}) {
+function Children2( ) {
     const [i1,set] = useState(2)
+    const data = this.data
     return (
         dom({
             class:() => {
-                return a + 1 
+                return data.a + 1 
             },
         },
-            () => children,
+            () => this.children,
             Children({
-                a: () => a + '33' + i1
+                a: () => this.a + '33' + i1
             })
         )
     )
@@ -128,7 +129,10 @@ function index() {
                 'A',
                 () => i + 'children'
             ),
-            Children({a:1}),
+            Children({a:1},
+                'Children',
+                () => i == 1 ? Children({a:2}): 'Children'
+            ),
             Children({a:2})
         )
     )
