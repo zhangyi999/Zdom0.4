@@ -38,7 +38,7 @@ function Components( com ) {
     let chook;
     return ( attrs, ...child ) => {
         // 打印执行顺序
-        console.log(com)
+        // console.log(com)
         // 通知上一个组件储存 hooks
         storageHooks()
         // 初始化全局组件 hooks
@@ -46,9 +46,8 @@ function Components( com ) {
         let vnode;
 
         
-        const l = {com}
+        const l = {}
         storageHooks = () => {
-            console.log(hooksList,'hooksList')
             hooks = hooksList
             l.hooks = hooks
             hooksList = []
@@ -196,24 +195,28 @@ function index() {
 
 let Index = Components(index)
 
-let wind = {}
-storageHooks = () => {
-    hooks = [...hooksList]
-    console.log(hooksList,'hooksList')
-    hooksList = []
-    const l = {hooks}
-    // l.vnode = wind.vnode
-    addDefine( l, 'vnode' , () => wind.vnode ) 
-    looks.push(l)
-    // 清除 storageHooks
-    storageHooks = null
+let initRender = {}
+
+function main() {
+    storageHooks = () => {
+        hooks = [...hooksList]
+        hooksList = []
+        initRender.hooks = hooks
+        // l.vnode = wind.vnode
+        // addDefine( l, 'vnode' , () => initRender.vnode ) 
+        looks.push(initRender)
+        // 清除 storageHooks
+        storageHooks = null
+    }
+    
+    let $ = useState('!')
+    initRender.vnode = Index()
+    // 收集最后一次 hooks
+    storageHooks()
+    return $
 }
-
-let $ = useState('!')
-wind.vnode = Index()
-// 收集最后一次 hooks
-storageHooks()
-
+main()
+console.log(looks)
 
 // function setData(n) {
 //     const obj = {data:n}
