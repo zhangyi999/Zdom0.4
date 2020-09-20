@@ -1,4 +1,3 @@
-
 // 状态保存
 function addDefine( obj, key , call ) {
     Object.defineProperty(obj, key, {
@@ -10,16 +9,55 @@ function addDefine( obj, key , call ) {
     });
 }
 
+// 
+// index
+//     // storageHooks = () => {...}
+//     useData // hooksList.push
+//     useData // hooksList.push
+//     Children
+//         // storageHooks()
+//         // storageHooks = () => {...}
+//         useData
+//         Children2
+//         useData
+//     Children
+//         useData
+//         最后一次收集
 
+// 全局 hooks
 let hooks = []
-let reload;
+// 全局搬运工，负责收集并执行 hook 和 Components 之间的关系
+let hooksList = []
+let storageHooks;
+
+// 测试用
+let looks = []
+
 function Components( com ) {
+    // 初始化
     let chook;
     return ( attrs, ...child ) => {
-        console.log(chook,'chookchook', com)
+        // 打印执行顺序
+        console.log(com)
+        // 通知上一个组件储存 hooks
+        storageHooks()
+        // 初始化全局组件 hooks
+        let hooks = []
+        let vnode;
+
+        
+        const l = {com}
+        storageHooks = () => {
+            console.log(hooksList,'hooksList')
+            hooks = hooksList
+            l.hooks = hooks
+            hooksList = []
+            // 清除 storageHooks
+            storageHooks = null
+        }
+        // 处理组件参数，包装 () => {} 参数类型
         const attr = {}
         const children = []
-
         for(var k in attrs) {
             if ( attrs[k] instanceof Function ) {
                 addDefine( attr, k , attrs[k] )
@@ -34,31 +72,47 @@ function Components( com ) {
                 children[k] = child[k]
             }
         }
-        // attr.children = children
-        reload = () => com.call({data:attr, children})
+        // 开始渲染
         const vdom = com.call({data:attr, children})
-        // chook = hooks
-        // prhooks.pre = hooks
-        // hooks = prhooks
-        // hooks = []
-
-        console.log(chook,'attr', com)
+        vnode = vdom
+        // log
+        l.vnode = vnode
+        looks.push(l)
         return vdom
     } 
 }
 
-let data
-function useState(init) {
-    if ( !data ) data = init
-    const render = reload
-    function set(n) {
-        data = n
-        const r = render()
-        console.log(r)
+function useState(initData) {
+    const obsData = {
+        data: initData
     }
-    reload = null
-    hooks.push({init, set})
-    return [data, set]
+    function loaded(fun) {
+        console.log(fun)
+        console.log(this.data,fun)
+    }
+
+    function watch(obj) {
+        console.log(obj)
+    }
+
+    function computer(fun) {
+        console.log(this.data,fun)
+    }
+
+    function die(fun) {
+        console.log(fun)
+        console.log(this.data,fun)
+    }
+    
+    hooksList.push({
+        data: obsData.data,
+        loaded,
+        watch,
+        computer,
+        die
+    })
+
+    return obsData
 }
 
 function dom( attr, ...child ) {
@@ -81,7 +135,7 @@ function dom( attr, ...child ) {
 }
 
 function Children1() {
-    const [i1,set] = useState(1)
+    const $ = useState(1)
     return (
         dom({ class:() => {
             return this.data.a + 1 
@@ -94,8 +148,10 @@ function Children1() {
 let Children = Components(Children1)
 // let i1 = 999
 function Children2( ) {
-    const [i1,set] = useState(2)
+    const $ = useState(2)
     const data = this.data
+
+    const $1 = useState('$1')
     return (
         dom({
             class:() => {
@@ -104,7 +160,7 @@ function Children2( ) {
         },
             () => this.children,
             Children({
-                a: () => this.a + '33' + i1
+                a: () => this.a + '33' + $.data
             })
         )
     )
@@ -140,22 +196,38 @@ function index() {
 
 let Index = Components(index)
 
-k = Index()
-
-
-function setData(n) {
-    const obj = {data:n}
-    let i = null
-    obj.set = n => {
-        clearTimeout(i)
-        i = setTimeout(()=>{
-            console.log(n, obj)
-            obj.data = n
-            clearTimeout(i)
-        },0)
-    }
-    return obj
+let wind = {}
+storageHooks = () => {
+    hooks = [...hooksList]
+    console.log(hooksList,'hooksList')
+    hooksList = []
+    const l = {hooks}
+    // l.vnode = wind.vnode
+    addDefine( l, 'vnode' , () => wind.vnode ) 
+    looks.push(l)
+    // 清除 storageHooks
+    storageHooks = null
 }
+
+let $ = useState('!')
+wind.vnode = Index()
+// 收集最后一次 hooks
+storageHooks()
+
+
+// function setData(n) {
+//     const obj = {data:n}
+//     let i = null
+//     obj.set = n => {
+//         clearTimeout(i)
+//         i = setTimeout(()=>{
+//             console.log(n, obj)
+//             obj.data = n
+//             clearTimeout(i)
+//         },0)
+//     }
+//     return obj
+// }
 
 // function obsData(initData) {
 //     const obj = {data:initData}
