@@ -1,3 +1,6 @@
+function checkTypes( data ) {
+    return Object.prototype.toString.call(data).replace(/object|\[|\]| /g,'')
+}
 // 状态保存
 function addDefine( obj, key , call ) {
     Object.defineProperty(obj, key, {
@@ -11,9 +14,12 @@ function addDefine( obj, key , call ) {
 
 // 全局 hooks
 let hooks = []
+
 // 全局搬运工，负责收集并执行 hook 和 Components 之间的关系
 let hooksList = []
 let storageHooks;
+// 储存 vnode
+let vnodes = null;
 
 // 测试用
 let looks = []
@@ -30,7 +36,7 @@ function Components( com ) {
         let hooks = []
         let vnode;
 
-        
+        vnodes = () => vnode
         const l = {}
         storageHooks = () => {
             hooks = hooksList
@@ -91,12 +97,72 @@ function useState(initData) {
         loaded,
         watch,
         computer,
-        die
+        die,
+        vnod: vnodes
     }
     addDefine( obsData, 'setState' , () => {
         return n => {
-            // console.log( state, n )
-            state.loaded()
+            obsData.data = n
+            const vnode = state.vnod()
+            const {sVnode, attr, children} = vnode
+            const sAttr = sVnode.attr
+            const sChildren = sVnode.children
+            for (const k in attr ) {
+                if ( attr[k] instanceof Function ) {
+                    const newAttr = attr[k]()
+                    if ( newAttr !== sAttr[k] ) {
+                        setAttribute(sVnode.Dom, k, newAttr)
+                        sAttr[k] = newAttr
+                    }
+                }
+            }
+            const oldChildrens =[...sVnode.Dom.childNodes]
+            children.map( (v, i) => {
+                if ( v instanceof Function ) {
+                    const newChildren = v()
+                    const oldChildren = sChildren[i]
+                    console.log({newChildren, oldChildren})
+                    if ( checkTypes(newChildren) !== checkTypes(oldChildren) ) {
+                        if ( newChildren instanceof Array ) {
+                            const fragment = document.createDocumentFragment()
+                            const vnodes = appCidren(newChildren, fragment)
+                            sVnode.Dom.replaceChild( fragment  ,oldChildrens[i])
+                            sChildren[i] = vnodes
+                            return
+                        }
+
+                        // if ( (oldChildren instanceof Array) ) {
+                        //     [...oldChildrens[i]][0]
+                        // }
+
+
+                        const fragment = document.createDocumentFragment()
+                        const vnodes = appCidren(newChildren, fragment)
+                        sVnode.Dom.replaceChild( fragment  ,oldChildrens[i])
+                        sChildren[i] = vnodes
+                        return
+                    }
+
+                    if ( !(newChildren instanceof Object) ) {
+                        const fragment = document.createDocumentFragment()
+                        const vnodes = appCidren(newChildren, fragment)
+                        sVnode.Dom.replaceChild( fragment  ,oldChildrens[i])
+                        sChildren[i] = vnodes
+                        return
+                    }
+
+                    
+                    
+                    // console.log(newChildren, newChildren, sChildren[i] , newChildren === sChildren[i])
+                    // if ( newAttr !== sAttr[k] ) {
+                    //     console.log ([sVnode.Dom], k, newAttr)
+                    //     setAttribute(sVnode.Dom, k, newAttr)
+                    //     sAttr[k] = newAttr
+                    // }
+                }
+            })
+            // console.log(state.vnod())
+            
         }
     })
     hooksList.push(state)
@@ -104,22 +170,103 @@ function useState(initData) {
     return obsData
 }
 
-function dom( attr, ...child ) {
-    // return {
-    //     attr,
-    //     children: child
-    // }
-    // const obj = {}
-    // for(var k in attr) {
-    //     if ( attr[k] instanceof Function ) {
-    //         obj[k] = attr[k]()
-    //     } else {
-    //         obj[k] = attr[k]
-    //     }
-    // }
+
+// --------------- DOM -------------------
+// attr
+function setAttribute(dom, key, attrs) {
+    if(key === 'placeholder') return dom.placeholder = attrs || '';
+    if(key === 'value') return dom.value = attrs || ''
+    if(key === 'checked') return dom.checked = attrs == true
+    if(key === 'disabled') return dom.disabled = attrs == true
+    if(key === '$innerHTML') return dom.innerHTML = attrs
+    dom.setAttribute(key, attrs);
+}
+
+function appCidren(Vchild, parent) {
+    if ( Vchild instanceof Function ) {
+        const vnode = appCidren(Vchild(), parent)
+        return vnode 
+    }
+
+    if ( Vchild instanceof Array ) {
+        const fragment = document.createDocumentFragment()
+        const vns = []
+        Vchild.map( v => {
+            // console.log({v})
+            const vd = appCidren(v, fragment)
+            vns.push(vd)
+        })
+        parent.appendChild(fragment)
+        return vns
+    }
+
+    if ( Vchild instanceof Element || Vchild instanceof Text || Vchild instanceof DocumentFragment ) {
+        parent.appendChild(Vchild)
+        return Vchild
+    }
+    if ( Vchild.$$type ) {
+        initVnode( Vchild , parent )
+        return Vchild
+    }
+    parent.appendChild(document.createTextNode(Vchild))
+    return Vchild
+}
+
+function initVnode( vnode , parent ) {
+    const {$$type ,attr, children} = vnode
+    const Dom = document.createElement( $$type )
+    const sVnode = {
+        attr: {},
+        children: []
+    }
+    for(const key in attr) {
+        if(/@\S/.test(key)) {
+            const value = attr[key]()
+            sVnode[key] = value
+            const events = key.replace('@','')
+            if(!events || events === '' || value === '') return;
+            Dom.addEventListener(events,function(e){
+                e.stopPropagation();
+                try{
+                    value( this, e );
+                }catch(err){
+                    console.log(err);
+                    throw new Error(events +'方法不存在');
+                }
+            })
+            return;
+        }
+
+        let val;
+        if ( attr[key] instanceof Function ) {
+            val = attr[key]()
+        } else {
+            val = attr[key]
+        }
+        sVnode.attr[key] = val
+        setAttribute( Dom, key, val )
+    }
+    children.map( v => {
+        const vnode = appCidren(v, Dom)
+        sVnode.children.push(vnode)
+    })
+    parent.appendChild(Dom)
+    sVnode.Dom = Dom
+    vnode.sVnode = sVnode
+}
+
+
+
+function dom( $$type ,attr, ...child ) {
     return {
+        $$type,
         attr,
-        children: child
+        children: child,
+        // Dom,
+        // render() {
+        //     setAttrData.map(v => v())
+        //     setChildData.map(v => v())
+        // }
     }
 }
 
@@ -127,13 +274,19 @@ function dom( attr, ...child ) {
 function Children1() {
     const $ = useState(1)
     setTimeout(()=>{
-        $.setState(this.data.a)
+        i = 999
+        $.setState(12)
+        // setTimeout(()=>{
+        //     i = 999
+        //     $.setState(12)
+        // }, 1000)
     }, 1000)
     return (
-        dom({ class:() => {
-            return this.data.a + 1 
-        } },
-            () => this.children
+        dom('div',{ class:() => $.data + this.data.a + 1 },
+            () => $.data,
+            'Children',
+            () => $.data === 1 ? '--h1--': dom('h1',{},'---'),
+            () => [1,3,4,5,1,2,3].map( v => dom('p',{}, () => v))
         )
     )
 }
@@ -146,12 +299,12 @@ function Children2( ) {
 
     const $1 = useState('$1')
     return (
-        dom({
+        dom('h2',{
             class:() => {
                 return data.a + 1 
             },
         },
-            () => this.children,
+            () => data.a  + 'C000',
             Children({
                 a: () => this.data.a + '33' + $.data
             })
@@ -169,7 +322,7 @@ function index() {
     //     set(i+1)
     // },5000)
     return (
-        dom({},
+        dom('h1',{},
             Children_2({
                 a: () => {
                     return i
@@ -180,7 +333,7 @@ function index() {
             ),
             Children({a:1},
                 'Children',
-                () => i == 1 ? Children({a:2}): 'Children'
+                () => i == 1 ? Children({a:2}): '1'
             ),
             Children({a:2})
         )
@@ -192,6 +345,7 @@ let Index = Components(index)
 let initRender = {}
 
 function main() {
+    vnodes = () => initRender.vnode
     storageHooks = () => {
         hooks = [...hooksList]
         hooksList = []
@@ -204,9 +358,14 @@ function main() {
     }
     
     let $ = useState('!')
+    root.innerHTML = ''
     initRender.vnode = Index()
+    const fragment = document.createDocumentFragment()
+    initVnode( initRender.vnode , fragment )
+    root.appendChild(fragment)
     // 收集最后一次 hooks
     storageHooks()
+    vnodes = null
     return $
 }
 main()
@@ -239,3 +398,32 @@ console.log(looks)
 //     }
 //     return obj
 // }
+// function dom( type, attr, ...child ) {
+//     console.log(type)
+//     // return {
+//     //     attr,
+//     //     children: child
+//     // }
+//     // const obj = {}
+//     // for(var k in attr) {
+//     //     if ( attr[k] instanceof Function ) {
+//     //         obj[k] = attr[k]()
+//     //     } else {
+//     //         obj[k] = attr[k]
+//     //     }
+//     // }
+//     return {
+//         attr,
+//         children: child
+//     }
+// }
+// dom('div',{
+//     class: () => 1 + 1
+// },
+//     dom('h2', {
+        
+//     },
+//         'A',
+//         dom('Components', {})
+//     )
+// )
