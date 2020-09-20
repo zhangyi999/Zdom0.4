@@ -9,21 +9,6 @@ function addDefine( obj, key , call ) {
     });
 }
 
-// 
-// index
-//     // storageHooks = () => {...}
-//     useData // hooksList.push
-//     useData // hooksList.push
-//     Children
-//         // storageHooks()
-//         // storageHooks = () => {...}
-//         useData
-//         Children2
-//         useData
-//     Children
-//         useData
-//         最后一次收集
-
 // 全局 hooks
 let hooks = []
 // 全局搬运工，负责收集并执行 hook 和 Components 之间的关系
@@ -86,8 +71,7 @@ function useState(initData) {
         data: initData
     }
     function loaded(fun) {
-        console.log(fun)
-        console.log(this.data,fun)
+        console.log(this,fun)
     }
 
     function watch(obj) {
@@ -95,21 +79,27 @@ function useState(initData) {
     }
 
     function computer(fun) {
-        console.log(this.data,fun)
+        console.log(this,fun)
     }
 
     function die(fun) {
         console.log(fun)
         console.log(this.data,fun)
     }
-    
-    hooksList.push({
+    const state = {
         data: obsData.data,
         loaded,
         watch,
         computer,
         die
+    }
+    addDefine( obsData, 'setState' , () => {
+        return n => {
+            // console.log( state, n )
+            state.loaded()
+        }
     })
+    hooksList.push(state)
 
     return obsData
 }
@@ -133,8 +123,12 @@ function dom( attr, ...child ) {
     }
 }
 
+// ----------- Test
 function Children1() {
     const $ = useState(1)
+    setTimeout(()=>{
+        $.setState(this.data.a)
+    }, 1000)
     return (
         dom({ class:() => {
             return this.data.a + 1 
@@ -159,7 +153,7 @@ function Children2( ) {
         },
             () => this.children,
             Children({
-                a: () => this.a + '33' + $.data
+                a: () => this.data.a + '33' + $.data
             })
         )
     )
