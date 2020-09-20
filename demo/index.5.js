@@ -66,14 +66,14 @@ function dom( attr, ...child ) {
     //     attr,
     //     children: child
     // }
-    const obj = {}
-    for(var k in attr) {
-        if ( attr[k] instanceof Function ) {
-            obj[k] = attr[k]()
-        } else {
-            obj[k] = attr[k]
-        }
-    }
+    // const obj = {}
+    // for(var k in attr) {
+    //     if ( attr[k] instanceof Function ) {
+    //         obj[k] = attr[k]()
+    //     } else {
+    //         obj[k] = attr[k]
+    //     }
+    // }
     return {
         attr,
         children: child
@@ -141,3 +141,32 @@ function index() {
 let Index = Components(index)
 
 k = Index()
+
+
+function setData(n) {
+    const obj = {data:n}
+    let i = null
+    obj.set = n => {
+        clearTimeout(i)
+        i = setTimeout(()=>{
+            console.log(n, obj)
+            obj.data = n
+            clearTimeout(i)
+        },0)
+    }
+    return obj
+}
+
+// function obsData(initData) {
+//     const obj = {data:initData}
+//     let i = null
+//     obj.setData = n => {
+//         mergeData(n)
+//         clearTimeout(i)
+//         i = setTimeout(()=>{
+//             reload()
+//             clearTimeout(i)
+//         },0)
+//     }
+//     return obj
+// }
