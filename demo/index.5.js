@@ -65,11 +65,70 @@ function Components( com ) {
         // 开始渲染
         const vdom = com.call({data:attr, children})
         vnode = vdom
-        // log
-        l.vnode = vnode
-        looks.push(l)
+        // // log
+        // l.vnode = vnode
+        // looks.push(l)
+        vdom.hooks = () => hooks
         return vdom
     } 
+}
+
+// 执行 die 函数
+// vnode: {
+//     $$type: String,
+//     attr: Object,
+//     children: Array,
+//     hooks: Array[{
+//         useState
+//     }],
+//     sVnode: {
+//         Dom: element,
+//         attr,
+//         children
+//     }
+// }
+// type : loaded|die
+function doneDie(type, vnode = {}) {
+    if ( !type || !vnode.$$type ) return
+    console.log(vnode)
+    if ( vnode.hooks ) {
+        vnode.hooks().map( v => {
+            type==='die'?v.die():v.loaded()
+        })
+    }
+
+    vnode.children.map( v => {
+        if ( v.$$type ) {
+            doneDie(type, v)
+            return
+        }
+
+        if ( v instanceof Array ) {
+            v.map(v => doneDie(type, v))
+            return
+        }
+    })
+}
+
+// diff 虚拟 dom
+
+function insertAfter(newElement,targetElement) {
+    var parent = targetElement.parentNode;
+    if (parent.lastChild == targetElement) {
+        parent.appendChild(newElement);
+    } else {
+        parent.insertBefore(newElement,targetElement.nextsibling);
+    }
+}
+
+function diffVnode( newVnode, oldVnode ) {
+    // if ( newVnode )
+    if ( !(newVnode instanceof Object ) && !(oldVnode instanceof Object ) && newVnode != oldVnode ){
+        const fragment = document.createDocumentFragment()
+        const vnodes = appCidren(newChildrenVnode, fragment)
+        sVnode.Dom.replaceChild( fragment  ,oldChildrenDom[i])
+        sChildren[i] = vnodes
+    }
 }
 
 function useState(initData) {
@@ -77,7 +136,7 @@ function useState(initData) {
         data: initData
     }
     function loaded(fun) {
-        console.log(this,fun)
+        console.log(this,'loaded')
     }
 
     function watch(obj) {
@@ -89,8 +148,8 @@ function useState(initData) {
     }
 
     function die(fun) {
-        console.log(fun)
-        console.log(this.data,fun)
+        // console.log(fun)
+        console.log(this.data, 'die');
     }
     const state = {
         data: obsData.data,
@@ -100,67 +159,145 @@ function useState(initData) {
         die,
         vnod: vnodes
     }
+    // 合并 setState 后在渲染
+    let time = null
     addDefine( obsData, 'setState' , () => {
         return n => {
             obsData.data = n
-            const vnode = state.vnod()
-            const {sVnode, attr, children} = vnode
-            const sAttr = sVnode.attr
-            const sChildren = sVnode.children
-            for (const k in attr ) {
-                if ( attr[k] instanceof Function ) {
-                    const newAttr = attr[k]()
-                    if ( newAttr !== sAttr[k] ) {
-                        setAttribute(sVnode.Dom, k, newAttr)
-                        sAttr[k] = newAttr
-                    }
-                }
-            }
-            const oldChildrens =[...sVnode.Dom.childNodes]
-            children.map( (v, i) => {
-                if ( v instanceof Function ) {
-                    const newChildren = v()
-                    const oldChildren = sChildren[i]
-                    console.log({newChildren, oldChildren})
-                    if ( checkTypes(newChildren) !== checkTypes(oldChildren) ) {
-                        if ( newChildren instanceof Array ) {
-                            const fragment = document.createDocumentFragment()
-                            const vnodes = appCidren(newChildren, fragment)
-                            sVnode.Dom.replaceChild( fragment  ,oldChildrens[i])
-                            sChildren[i] = vnodes
-                            return
+            clearTimeout(time)
+            time = setTimeout(()=>{
+                const vnode = state.vnod()
+                const {sVnode, attr, children} = vnode
+                const sAttr = sVnode.attr
+                const sChildren = sVnode.children
+                for (const k in attr ) {
+                    if ( !(/on\S/.test(key)) && attr[k] instanceof Function ) {
+                        const newAttr = attr[k]()
+                        if ( newAttr !== sAttr[k] ) {
+                            newAttr?setAttribute(sVnode.Dom, k, newAttr): sVnode.Dom.removeAttribute(k)
+                            sAttr[k] = newAttr
                         }
-
-                        // if ( (oldChildren instanceof Array) ) {
-                        //     [...oldChildrens[i]][0]
-                        // }
-
-
-                        const fragment = document.createDocumentFragment()
-                        const vnodes = appCidren(newChildren, fragment)
-                        sVnode.Dom.replaceChild( fragment  ,oldChildrens[i])
-                        sChildren[i] = vnodes
-                        return
                     }
-
-                    if ( !(newChildren instanceof Object) ) {
-                        const fragment = document.createDocumentFragment()
-                        const vnodes = appCidren(newChildren, fragment)
-                        sVnode.Dom.replaceChild( fragment  ,oldChildrens[i])
-                        sChildren[i] = vnodes
-                        return
-                    }
-
-                    
-                    
-                    // console.log(newChildren, newChildren, sChildren[i] , newChildren === sChildren[i])
-                    // if ( newAttr !== sAttr[k] ) {
-                    //     console.log ([sVnode.Dom], k, newAttr)
-                    //     setAttribute(sVnode.Dom, k, newAttr)
-                    //     sAttr[k] = newAttr
-                    // }
                 }
-            })
+                let oldChildrenDom = [...sVnode.Dom.childNodes]
+                let newArrayEmptyNumber = 0
+                let newArrayLength = 0
+                children.map( (v, i1) => {
+                    
+                    if ( v instanceof Function ) {
+                        const newChildrenVnode = v()
+                        const oldChildrenVnode = sChildren[i1]
+                        
+                        // 0.1 粗糙版本，只对比同级 newChildrenVnode is Array 截止
+                        
+                        if ( newChildrenVnode instanceof Array ) {
+                            newArrayLength = newArrayLength + newChildrenVnode.length - 2
+                            if ( oldChildrenVnode instanceof Array ) {
+                                let oldlen = oldChildrenVnode.length
+                                if ( newChildrenVnode.length === 0 ) newArrayEmptyNumber += 1
+                                const maxLen = Math.max(newChildrenVnode.length, oldChildrenVnode.length)
+                                let fragment = document.createDocumentFragment()
+                                for ( let i = 0; i < maxLen; i++ ) {
+                                    // console.log(oldChildrenDom, i1, i, [oldChildrenDom[i1+i - 1]]);
+                                    // 新的数组短
+                                    if ( newChildrenVnode[i] === undefined ) {
+                                        // console.log('undefined',sVnode.Dom.childNodes, oldChildrenDom, i1, i, oldChildrenVnode, newArrayEmptyNumber);
+                                        // oldChildrenDom[i1+i].remove()
+                                        sVnode.Dom.childNodes[i1].remove()
+                                        doneDie('die', oldChildrenVnode[i])
+                                        oldChildrenVnode.length -= 1;
+                                        oldChildrenDom.splice(i1,1);
+                                    } else if ( oldChildrenVnode[i] === undefined ) {
+                                        // 旧的数组短
+                                        // console.log( newChildrenVnode, oldChildrenVnode, oldChildrenDom, i1,i )
+                                        // 旧的数组短
+                                         const vnodes = appCidren(newChildrenVnode[i], fragment);
+                                         sChildren[i1].push(vnodes);
+                                        //  console.log({sChildren: sChildren[i1],i1})
+
+                                    } else if ( 
+                                        !(oldChildrenVnode[i] instanceof Object ) && 
+                                        !(newChildrenVnode[i] instanceof Object ) && 
+                                        newChildrenVnode[i] != oldChildrenVnode[i]
+                                    ) {
+                                        // console.log('非节点')
+                                        // 非节点
+                                        let fragment = document.createDocumentFragment()
+                                        const vnodes = appCidren(newChildrenVnode, fragment)
+                                        sChildren[i] = vnodes
+                                        sVnode.Dom.replaceChild( fragment, oldChildrenDom[i] )
+                                        fragment = null
+
+                                    } else if ( newChildrenVnode[i].$$type !== oldChildrenVnode[i].$$type ) {
+                                        // 类型不同
+                                        // console.log('类型不同')
+                                        let fragment = document.createDocumentFragment()
+                                        const vnodes = appCidren(newChildrenVnode, fragment)
+                                        sChildren[i] = vnodes
+                                        sVnode.Dom.replaceChild( fragment, oldChildrenDom[i] )
+                                        fragment = null
+                                    } else {
+                                        // 节点类型相同
+                                        const { attr, children } = newChildrenVnode[i]
+                                        const sVnode = oldChildrenVnode[i]
+                                        const sAttr = sVnode.attr
+                                        const sChildren = sVnode.children
+                                        for (const k in attr ) {
+                                            if (!(/on\S/.test(k)) && attr[k] instanceof Function ) {
+                                                const newAttr = attr[k]()
+                                                if ( newAttr !== sAttr[k] ) {
+                                                    newAttr?setAttribute(sVnode.Dom, k, newAttr): sVnode.Dom.removeAttribute(k)
+                                                    sAttr[k] = newAttr
+                                                }
+                                            }
+                                        }
+                                        children.map( v => {
+                                            // diff children
+                                        })
+                                    }
+                                }
+                                console.log({oldlen, i1, newArrayEmptyNumber, oldChildrenDom}, i1 - newArrayEmptyNumber + oldlen + newArrayLength, newArrayLength,oldChildrenDom)
+                                if ( oldlen < newChildrenVnode.length ) {
+                                    oldChildrenDom[i1 - newArrayEmptyNumber + oldlen]?
+                                        sVnode.Dom.insertBefore(fragment,oldChildrenDom[i1- newArrayEmptyNumber + (oldlen - 1) + newArrayLength - 2]):
+                                        sVnode.Dom.appendChild(fragment);
+                                }
+                                fragment = null
+                            } else {
+                                
+                                let fragment = document.createDocumentFragment()
+                                const vnodes = appCidren(newChildrenVnode, fragment)
+                                sChildren[i1] = vnodes
+                                sVnode.Dom.replaceChild( fragment, oldChildrenDom[i1] )
+                                fragment = null
+                            }
+                        } else {
+                            if ( oldChildrenVnode instanceof Array ) {
+                                let fragment = document.createDocumentFragment()
+                                const vnodes = appCidren(newChildrenVnode, fragment)
+                                sChildren[i1] = vnodes
+                                sVnode.Dom.replaceChild( fragment, oldChildrenDom[0] )
+                                oldChildrenVnode.map( (v, i) => {
+                                    if ( i > 0 ) {
+                                        oldChildrenDom[i].remove()
+                                    }
+                                })
+                                fragment = null
+                            } else {
+                                let fragment = document.createDocumentFragment();
+                                const vnodes = appCidren(newChildrenVnode, fragment);
+                                console.log(i1 ,newArrayEmptyNumber, newArrayLength, [sVnode.Dom],[fragment],[oldChildrenDom[i1-newArrayEmptyNumber+  Math.max( newArrayLength, 0)]],{ vnodes }, { newChildrenVnode }, oldChildrenDom[i1], i1, oldChildrenDom, newArrayEmptyNumber);
+                                sChildren[i1] = vnodes;
+                                sVnode.Dom.replaceChild(fragment, oldChildrenDom[ Math.max( i1- newArrayEmptyNumber + newArrayLength, 0)]);
+                                fragment = null
+                            }
+                        }
+                    }
+                })
+                oldChildrenDom = null
+                clearTimeout(time)
+            },0)
+            
             // console.log(state.vnod())
             
         }
@@ -220,10 +357,10 @@ function initVnode( vnode , parent ) {
         children: []
     }
     for(const key in attr) {
-        if(/@\S/.test(key)) {
+        if(/on\S/.test(key)) {
             const value = attr[key]()
             sVnode[key] = value
-            const events = key.replace('@','')
+            const events = key.replace('on','').toLocaleLowerCase()
             if(!events || events === '' || value === '') return;
             Dom.addEventListener(events,function(e){
                 e.stopPropagation();
@@ -234,7 +371,7 @@ function initVnode( vnode , parent ) {
                     throw new Error(events +'方法不存在');
                 }
             })
-            return;
+            continue;
         }
 
         let val;
@@ -253,6 +390,7 @@ function initVnode( vnode , parent ) {
     parent.appendChild(Dom)
     sVnode.Dom = Dom
     vnode.sVnode = sVnode
+    doneDie('loaded', vnode)
 }
 
 
@@ -275,19 +413,28 @@ function Children1() {
     const $ = useState(1)
     setTimeout(()=>{
         i = 999
-        $.setState(12)
-        // setTimeout(()=>{
-        //     i = 999
-        //     $.setState(12)
-        // }, 1000)
+        // $.setState(12)
+        $.setState(13)
+        setTimeout(()=>{
+            i = 999
+            $.setState(1)
+            setTimeout(()=>{
+                i = 999
+                // $.setState(12)
+                $.setState(13)
+                setTimeout(()=>{
+                    i = 999
+                    $.setState(1)
+                }, 1000)
+            }, 1000)
+        }, 1000)
     }, 1000)
     return (
-        dom('div',{ class:() => $.data + this.data.a + 1 },
-            () => $.data,
-            'Children',
-            () => $.data === 1 ? '--h1--': dom('h1',{},'---'),
-            () => [1,3,4,5,1,2,3].map( v => dom('p',{}, () => v))
-        )
+        <div class={$.data + this.data.a + 1}>
+            {$.data}
+            Children
+            {$.data === 1 ? '--h1--': <h1>---</h1>}
+        </div>
     )
 }
 
@@ -299,16 +446,10 @@ function Children2( ) {
 
     const $1 = useState('$1')
     return (
-        dom('h2',{
-            class:() => {
-                return data.a + 1 
-            },
-        },
-            () => data.a  + 'C000',
-            Children({
-                a: () => this.data.a + '33' + $.data
-            })
-        )
+        <h2>
+            {data.a  + 'C000'},
+            <Children a={this.data.a + '33' + $.data}/>
+        </h2>
     )
 }
 
@@ -317,26 +458,53 @@ let Children_2 = Components(Children2)
 
 let i = 1
 function index() {
+    const $ = useState(2)
+    const inp = useState(2)
+    // setTimeout(() => {
+    //     i = 999;
+    //     // $.setState(12)
+    //     $.setState('A');
+    //     setTimeout(() => {
+    //         i = 999;
+    //         $.setState('C');
+    //         setTimeout(() => {
+    //             i = 999;
+    //             // $.setState(12)
+    //             $.setState('B');
+    //             setTimeout(() => {
+    //                 i = 999;
+    //                 $.setState('A');
+    //             }, 1000);
+    //         }, 1000);
+    //     }, 1000);
+    // }, 1000);
     // const [i,set] = useState(0)
     // setTimeout(() => {
     //     set(i+1)
     // },5000)
+    // <Children_2 a={i}>A {i + 'children'}</Children_2>
+    // <Children a={1}>Children {i == 1 ? <Children a={2} />: '1'}</Children>
+    // <Children a={3} />
+    let oo = [0]
+
+    // {oo.map( v => <p>{v}</p>)}
     return (
-        dom('h1',{},
-            Children_2({
-                a: () => {
-                    return i
-                }
-            },
-                'A',
-                () => i + 'children'
-            ),
-            Children({a:1},
-                'Children',
-                () => i == 1 ? Children({a:2}): '1'
-            ),
-            Children({a:2})
-        )
+        <h2>
+            {oo.map( v => <p>{v}</p>)}
+            {oo.map( v => <p>{v}</p>)}
+            {oo.map( v => <p>{v}</p>)}
+            {inp.data}
+            {inp.data}
+            <input type='text' value={inp.data} onInput={(el) => {
+                console.log(el.value)
+                
+                if ( el.value === '' ) {
+                    oo = []
+                } else oo.push(el.value)
+                inp.setState(el.value)
+            }} />
+        </h2>
+        
     )
 }
 
@@ -359,9 +527,9 @@ function main() {
     
     let $ = useState('!')
     root.innerHTML = ''
-    initRender.vnode = Index()
+    initRender.vnode = <Index />
     const fragment = document.createDocumentFragment()
-    initVnode( initRender.vnode , fragment )
+    initVnode( initRender.vnode , root )
     root.appendChild(fragment)
     // 收集最后一次 hooks
     storageHooks()
@@ -370,60 +538,3 @@ function main() {
 }
 main()
 console.log(looks)
-
-// function setData(n) {
-//     const obj = {data:n}
-//     let i = null
-//     obj.set = n => {
-//         clearTimeout(i)
-//         i = setTimeout(()=>{
-//             console.log(n, obj)
-//             obj.data = n
-//             clearTimeout(i)
-//         },0)
-//     }
-//     return obj
-// }
-
-// function obsData(initData) {
-//     const obj = {data:initData}
-//     let i = null
-//     obj.setData = n => {
-//         mergeData(n)
-//         clearTimeout(i)
-//         i = setTimeout(()=>{
-//             reload()
-//             clearTimeout(i)
-//         },0)
-//     }
-//     return obj
-// }
-// function dom( type, attr, ...child ) {
-//     console.log(type)
-//     // return {
-//     //     attr,
-//     //     children: child
-//     // }
-//     // const obj = {}
-//     // for(var k in attr) {
-//     //     if ( attr[k] instanceof Function ) {
-//     //         obj[k] = attr[k]()
-//     //     } else {
-//     //         obj[k] = attr[k]
-//     //     }
-//     // }
-//     return {
-//         attr,
-//         children: child
-//     }
-// }
-// dom('div',{
-//     class: () => 1 + 1
-// },
-//     dom('h2', {
-        
-//     },
-//         'A',
-//         dom('Components', {})
-//     )
-// )
