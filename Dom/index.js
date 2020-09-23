@@ -14,7 +14,7 @@ let hooks = []
 
 // 全局搬运工，负责收集并执行 hook 和 Components 之间的关系
 let hooksList = []
-let storageHooks;
+let storageHooks = () => {};
 // 储存 vnode
 let vnodes = null;
 
@@ -36,9 +36,10 @@ function Components( com ) {
         vnodes = () => vnode
         storageHooks = () => {
             hooks = hooksList
+            // console.log(hooks[0].loaded(),'vnod1111e===')
             hooksList = []
             // 清除 storageHooks
-            storageHooks = null
+            storageHooks = () => {}
         }
         // 处理组件参数，包装 () => {} 参数类型
         const attr = {}
@@ -82,7 +83,8 @@ function Components( com ) {
 // type : loaded|die
 function doneDie(type, vnode = {}) {
     if ( !type || !vnode.$$type ) return
-    console.log(vnode)
+    // console.log(type, vnode.hooks())
+    // console.log(vnode)
     if ( vnode.hooks ) {
         vnode.hooks().map( v => {
             type==='die'?v.die():v.loaded()
@@ -104,14 +106,14 @@ function doneDie(type, vnode = {}) {
 
 // diff 虚拟 dom
 
-function insertAfter(newElement,targetElement) {
-    var parent = targetElement.parentNode;
-    if (parent.lastChild == targetElement) {
-        parent.appendChild(newElement);
-    } else {
-        parent.insertBefore(newElement,targetElement.nextsibling);
-    }
-}
+// function insertAfter(newElement,targetElement) {
+//     var parent = targetElement.parentNode;
+//     if (parent.lastChild == targetElement) {
+//         parent.appendChild(newElement);
+//     } else {
+//         parent.insertBefore(newElement,targetElement.nextsibling);
+//     }
+// }
 
 // 1. 输入 vnode & sVnode
 // 2. vnode 获取新数据
@@ -123,7 +125,7 @@ function insertAfter(newElement,targetElement) {
 // 8. 同是数组，轮询递归，vnode & sVnode
 
 function diffVnode( vnode, sVnode ) {
-    // console.log( vnode, sVnode,'vnode, sVnode' )
+    // console.log( vnode.children[0] instanceof Function?vnode.children[0]():'', sVnode,'vnode, sVnode' )
     const {attr, children} = vnode
     const Dom = sVnode.Dom
     const sAttr = sVnode.attr
@@ -145,7 +147,6 @@ function diffVnode( vnode, sVnode ) {
             const newChildrenVnode = v()
             // console.log({newChildrenVnode}, 'v()')
             const oldChildrenVnode = sChildren[i1]
-            
             // 0.1 粗糙版本，只替换 不 位移
             
             if ( newChildrenVnode instanceof Array ) {
@@ -164,7 +165,6 @@ function diffVnode( vnode, sVnode ) {
                         } else if ( oldChildrenVnode[i] === undefined ) {
                             // add
                             // 旧的数组短
-
                             // console.log({previousElementIndex_1:previousElementIndex-1}, 'addaddadd')
                             let fragment = document.createDocumentFragment()
                             const vnodes = appCidren(newChildrenVnode[i], fragment);
@@ -180,7 +180,7 @@ function diffVnode( vnode, sVnode ) {
                         } else if ( 
                             !(oldChildrenVnode[i] instanceof Object ) && 
                             !(newChildrenVnode[i] instanceof Object ) && 
-                            newChildrenVnode[i] != oldChildrenVnode[i]
+                            newChildrenVnode[i] !== oldChildrenVnode[i]
                         ) {
                             // console.log('非节点')
                             // 非节点| replace
@@ -219,14 +219,15 @@ function diffVnode( vnode, sVnode ) {
                 if ( oldChildrenVnode instanceof Array ) {
                     let fragment = document.createDocumentFragment()
                     const vnodes = appCidren(newChildrenVnode, fragment)
-                    sChildren[i1] = vnodes
                     Dom.replaceChild( fragment, Dom.childNodes[previousElementIndex] )
                     previousElementIndex += 1
                     oldChildrenVnode.map( (v, i) => {
                         if ( i > 0 ) {
                             Dom.childNodes[previousElementIndex].remove()
+                            doneDie('die', v)
                         }
                     })
+                    sChildren[i1] = vnodes
                     fragment = null
                 } else {
                     // console.log( {newChildrenVnode, oldChildrenVnode},'vnod11e, sVno111de' )
@@ -243,12 +244,29 @@ function diffVnode( vnode, sVnode ) {
                         Dom.replaceChild(fragment, Dom.childNodes[previousElementIndex]);
                         fragment = null
                         previousElementIndex += 1
-                    } else if ( newChildrenVnode.$$type !== oldChildrenVnode.$$type ) {
+                    } else if((!newChildrenVnode)) {
+                        Dom.childNodes[previousElementIndex].remove()
+                        doneDie('die', oldChildrenVnode)
+                        sChildren[i1] = newChildrenVnode;
+                    } else if (!oldChildrenVnode) {
+                        let fragment = document.createDocumentFragment()
+                        // 这里 newChildrenVnode 已经 被执行 了 component 了，但是最后一个组件 没执行storageHooks()
+                        const vnodes = appCidren(newChildrenVnode, fragment);
+                        sChildren[i1] = (vnodes);
+                        // insertAfter(fragment,Dom.childNodes[previousElementIndex-1])
+                        const traget = Dom.childNodes[previousElementIndex]
+                        // console.log(traget, Dom, ,'tragettraget')
+                        traget?Dom.insertBefore(fragment,traget):Dom.appendChild(fragment);
+                        fragment = null
+                        previousElementIndex += 1
+                    }
+                    else if ((newChildrenVnode.$$type !== oldChildrenVnode.$$type) ) {
                         // 类型不同
                         let fragment = document.createDocumentFragment()
                         const vnodes = appCidren(newChildrenVnode, fragment)
-                        sChildren[i1] = vnodes
                         Dom.replaceChild( fragment, Dom.childNodes[previousElementIndex] )
+                        doneDie('die', oldChildrenVnode)
+                        sChildren[i1] = vnodes
                         fragment = null
                         previousElementIndex += 1
                     } else {
@@ -269,28 +287,28 @@ function useState(initData) {
     const loadedMap = []
     const computerMap = []
     const dieMap = []
-    addDefine(obsData, 'loaded', fn => {
+    addDefine(obsData, 'loaded', () => fn => {
         loadedMap.push(fn)
         return obsData
     })
-    addDefine(obsData, 'computer', fn => {
+    addDefine(obsData, 'computer', () => fn => {
         computerMap.push(fn)
         return obsData
     })
-    addDefine(obsData, 'die', fn => {
+    addDefine(obsData, 'die', () => fn => {
         dieMap.push(fn)
         return obsData
     })
     function loaded() {
-        loadedMap.map( v => v(obsData))
+        loadedMap.map( v => v(obsData.data))
     }
 
     function computer() {
-        computerMap.map( v => v(obsData))
+        computerMap.map( v => v(obsData.data))
     }
 
     function die() {
-        dieMap.map( v => v(obsData))
+        dieMap.map( v => v(obsData.data))
     }
     const state = {
         data: obsData.data,
@@ -311,7 +329,11 @@ function useState(initData) {
             time = setTimeout(()=>{
                 const vnode = state.vnod()
                 const {sVnode} = vnode
+                // console.log({vnode, sVnode})
                 diffVnode( vnode, sVnode )
+                // 保存最后一个组件的 hooks 
+                storageHooks()
+                computer()
                 clearTimeout(time)
             },0)
         }
@@ -404,7 +426,9 @@ function initVnode( vnode , parent ) {
     parent.appendChild(Dom)
     sVnode.Dom = Dom
     vnode.sVnode = sVnode
-    doneDie('loaded', vnode)
+    setTimeout(()=> {
+        doneDie('loaded', vnode)
+    },10)
 }
 
 function dom( $$type ,attr, ...child ) {
@@ -433,12 +457,12 @@ function render(fun, APP) {
         // addDefine( l, 'vnode' , () => initRender.vnode ) 
         // looks.push(initRender)
         // 清除 storageHooks
-        storageHooks = null
+        storageHooks = () => {}
     }
     APP.innerHTML = ''
     initRender.vnode = fun()
     const fragment = document.createDocumentFragment()
-    initVnode( initRender.vnode , root )
+    initVnode( initRender.vnode , APP )
     APP.appendChild(fragment)
     // 收集最后一次 hooks
     storageHooks()
