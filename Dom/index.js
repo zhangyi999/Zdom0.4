@@ -291,7 +291,11 @@ function diffVnode( vnode, sVnode ) {
                 }
             }
         } else {
+            if ( v.$$type ) {
+                diffVnode( v, v.sVnode )
+            }
             // console.log(v, previousElementIndex)
+            // diffVnode( newChildrenVnode, oldChildrenVnode.sVnode )
             previousElementIndex += 1
         }
         // previousElementIndex += 1

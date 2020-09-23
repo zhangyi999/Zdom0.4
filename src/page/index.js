@@ -40,15 +40,15 @@ function Index() {
   
 
   // console.log(<p>{$.data} {d}</p>)
-  const d1 = <Card>
-  asdfdsfsd {d}
-</Card>
-console.log(d1.children[0]())
+  // const d1 = 
+// console.log(d1.children[0]())
+// {d ? <P l={$.data} /> : null}
+//       {d}
   return (
     <div class='page'>
-      {d ? <P l={$.data} /> : null}
-      {d}
-      {d1}
+      <Card>
+        asdfdsfsd {d}
+      </Card>
       <div onClick={()=>{
         // i= i+1
         d = !d
