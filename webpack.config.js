@@ -10,7 +10,7 @@ const isDev = true
 module.exports = {
     entry: path.resolve(__dirname, 'src/APP.js'),
     resolve:{ 
-        extensions: [".js",".css",".json"], 
+        extensions: [".js",".css",".scss",".json"], 
         //配置别名可以加快webpack查找模块的速度
         alias: {
             dom:path.resolve(__dirname, 'Dom')
@@ -51,17 +51,18 @@ module.exports = {
     module: {
         rules: [
             {
-                test: /\.css/,
-                use: [{ loader: MiniCssExtractPlugin.loader}, 'css-loader'],
+                test: /\.css?$/,
+                use: ['style-loader', 'css-loader'],
                 exclude: /node_modules/,
                 include: path.resolve(__dirname, 'src')
             },
             {
-                test: /\.scss/,
-                use: [{ loader: MiniCssExtractPlugin.loader }, 'css-loader', 'sass-loader'],
+                test: /\.scss?$/,
+                use: ['style-loader', 'css-loader', 'sass-loader'],
                 exclude: /node_modules/,
                 include: path.resolve(__dirname, 'src')
             },
+
             {
                 test: /\.(gif|jpg|png|bmp|eot|woff|woff2|ttf|svg)/,
                 use: [

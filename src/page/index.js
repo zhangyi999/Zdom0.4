@@ -1,5 +1,6 @@
 import dom, { useState, Components } from 'dom';
 
+import './index.scss'
 import Card  from './Card'
 
 // const ins = useState(0)
@@ -42,6 +43,7 @@ function Index() {
       // },2000)
     }
   )
+  const sroc = useState(0)
               // .loaded(() => {
               //   console.log('isLOADE')
               // })
@@ -55,7 +57,8 @@ function Index() {
 const dd =new Array(10000).fill(0)
   return (
     <div class='page'>
-    ins {num}
+    
+    ins {num} {sroc.data}
     <div onClick={()=>{
       // i= i+1
       d = !d
@@ -72,14 +75,28 @@ const dd =new Array(10000).fill(0)
     }}>
       i++ {d}
     </div>
+    <div
+      class="scroll"
+      onScroll={(el)=>{
+        sroc.setState(el.scrollTop)
+      }}
+    >
     {
       dd.map( (v, i) => (
         i > 9900?
         <Card class={d}>
-          {v} asdfdsfsd {d}
+          <Card>
+            {d}
+            <Card>
+              {v} asdfdsfsd {d}
+            </Card>
+          </Card>
+          {d}
         </Card>:null
       ))
     }
+    </div>
+    
       
      
     </div>
