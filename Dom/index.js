@@ -142,11 +142,13 @@ function diffVnode( vnode, sVnode ) {
     // console.log({sVnode, vnode, Dom})
     // 每遍历【过】一个 非数组 非空 元素就 +1 ，
     let previousElementIndex = 0
+    // console.log(children)
     children.map((v, i1) => {
         if ( v instanceof Function ) {
             const newChildrenVnode = v()
-            // console.log({newChildrenVnode}, 'v()')
             const oldChildrenVnode = sChildren[i1]
+
+            // console.log({newChildrenVnode, oldChildrenVnode}, 'v()')
             // 0.1 粗糙版本，只替换 不 位移
             
             if ( newChildrenVnode instanceof Array ) {
@@ -235,7 +237,13 @@ function diffVnode( vnode, sVnode ) {
                         !(oldChildrenVnode instanceof Object ) && 
                         !(newChildrenVnode instanceof Object )
                     ) {
-                        if ( newChildrenVnode === oldChildrenVnode ) return
+                        if ( newChildrenVnode === oldChildrenVnode ){
+                            (   newChildrenVnode
+                                || newChildrenVnode === 0
+                                || newChildrenVnode === ''
+                            ) ? previousElementIndex += 1: null
+                            return
+                        } 
                         let fragment = document.createDocumentFragment();
                         const vnodes = appCidren(newChildrenVnode, fragment);
                         //console.log(i1 ,newArrayEmptyNumber, newArrayLength, [sVnode.Dom],[fragment],[oldChildrenDom[i1-newArrayEmptyNumber+  Math.max( newArrayLength, 0)]],{ vnodes }, { newChildrenVnode }, oldChildrenDom[i1], i1, oldChildrenDom, newArrayEmptyNumber);
@@ -275,7 +283,15 @@ function diffVnode( vnode, sVnode ) {
                     
                 }
             }
+        } else {
+            // console.log(v, previousElementIndex)
+            previousElementIndex += 1
         }
+        // previousElementIndex += 1
+        // else if ( v ) {
+        //     previousElementIndex += 1
+        //     // doneDie('loaded', vnode)
+        // }
     })
     previousElementIndex = null
 }
@@ -377,7 +393,7 @@ function appCidren(Vchild, parent) {
         parent.appendChild(Vchild)
         return Vchild
     }
-    if ( Vchild.$$type ) {
+    if ( Vchild && Vchild.$$type ) {
         initVnode( Vchild , parent )
         return Vchild
     }
