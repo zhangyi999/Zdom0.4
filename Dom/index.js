@@ -354,13 +354,13 @@ function useState(initData) {
                 obsData.data = fn
             clearTimeout(time)
             time = setTimeout(()=>{
+                computer()
                 const vnode = state.vnod()
                 const {sVnode} = vnode
                 // console.log({vnode, sVnode})
                 diffVnode( vnode, sVnode )
                 // 保存最后一个组件的 hooks 
                 storageHooks()
-                computer()
                 clearTimeout(time)
             },0)
         }

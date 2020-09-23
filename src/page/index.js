@@ -2,6 +2,10 @@ import dom, { useState, Components } from 'dom';
 
 import Card  from './Card'
 
+// const ins = useState(0)
+// setInterval(()=>{
+//   ins.setState(ins.data + 1)
+// }, 1000)
 
 let i = 1
 function po() {
@@ -46,7 +50,8 @@ function Index() {
 //       {d}
   return (
     <div class='page'>
-      <Card>
+    ins
+      <Card class={d}>
         asdfdsfsd {d}
       </Card>
       <div onClick={()=>{
@@ -54,7 +59,7 @@ function Index() {
         d = !d
         $.setState(i)
       }}>
-        i++
+        i++ {d}
       </div>
     </div>
   )
