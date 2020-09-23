@@ -47,7 +47,7 @@ function writeTm(path, vueTemp) {
 }
 
 function creatVue(path, name, vueTemp) {
-  path = path + "/" + name + ".jsx";
+  path = path + "/" + name + ".js";
   writeTm(path, vueTemp);
 }
 

@@ -181,14 +181,21 @@ function diffVnode( vnode, sVnode ) {
 
                         } else if ( 
                             !(oldChildrenVnode[i] instanceof Object ) && 
-                            !(newChildrenVnode[i] instanceof Object ) && 
-                            newChildrenVnode[i] !== oldChildrenVnode[i]
+                            !(newChildrenVnode[i] instanceof Object )
                         ) {
                             // console.log('非节点')
                             // 非节点| replace
+                            
+                            if ( newChildrenVnode[i] === oldChildrenVnode[i] ){
+                                (   newChildrenVnode[i]
+                                    || newChildrenVnode[i] === 0
+                                    || newChildrenVnode[i] === ''
+                                ) ? previousElementIndex += 1: null
+                                continue
+                            }
                             let fragment = document.createDocumentFragment()
-                            const vnodes = appCidren(newChildrenVnode, fragment)
-                            sChildren[i] = vnodes
+                            const vnodes = appCidren(newChildrenVnode[i], fragment)
+                            sChildren[i1][i] = vnodes
                             Dom.replaceChild( fragment, Dom.childNodes[previousElementIndex] )
                             fragment = null
                             previousElementIndex += 1

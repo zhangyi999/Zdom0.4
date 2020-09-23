@@ -1,4 +1,8 @@
 import dom, { useState, Components } from 'dom';
+
+import Card  from './Card'
+
+
 let i = 1
 function po() {
   const $ = useState(9)
@@ -36,12 +40,19 @@ function Index() {
   
 
   // console.log(<p>{$.data} {d}</p>)
+  const d1 = <Card>
+  asdfdsfsd {d}
+</Card>
+console.log(d1.children[0]())
   return (
     <div class='page'>
       {d ? <P l={$.data} /> : null}
       {d}
+      {d1}
       <div onClick={()=>{
-        $.setState(i++)
+        // i= i+1
+        d = !d
+        $.setState(i)
       }}>
         i++
       </div>
