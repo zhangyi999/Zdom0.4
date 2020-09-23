@@ -144,9 +144,9 @@ function diffVnode( vnode, sVnode ) {
     let previousElementIndex = 0
     // console.log(children)
     children.map((v, i1) => {
+        const oldChildrenVnode = sChildren[i1]
         if ( v instanceof Function ) {
             const newChildrenVnode = v()
-            const oldChildrenVnode = sChildren[i1]
 
             // console.log({newChildrenVnode, oldChildrenVnode}, 'v()')
             // 0.1 粗糙版本，只替换 不 位移
@@ -292,7 +292,7 @@ function diffVnode( vnode, sVnode ) {
             }
         } else {
             if ( v.$$type ) {
-                diffVnode( v, v.sVnode )
+                diffVnode( v, oldChildrenVnode.sVnode )
             }
             // console.log(v, previousElementIndex)
             // diffVnode( newChildrenVnode, oldChildrenVnode.sVnode )
@@ -383,6 +383,7 @@ function setAttribute(dom, key, attrs) {
 }
 
 function appCidren(Vchild, parent) {
+
     if ( Vchild instanceof Function ) {
         const vnode = appCidren(Vchild(), parent)
         return vnode 
@@ -408,7 +409,7 @@ function appCidren(Vchild, parent) {
         initVnode( Vchild , parent )
         return Vchild
     }
-    parent.appendChild(document.createTextNode(Vchild))
+    parent.appendChild(document.createTextNode(Vchild!==null?Vchild:''))
     return Vchild
 }
 

@@ -24,8 +24,12 @@ function po() {
 const P = Components(po)
 
 let d = true
+let num = 0
 function Index() {
   const $ = useState(0)
+  $.computer(() => {
+    // num = i + 1 + (d?10:32)
+  })
   $.loaded(() => {
       console.log('isLOADE')
       // setInterval(()=>{
@@ -48,19 +52,36 @@ function Index() {
 // console.log(d1.children[0]())
 // {d ? <P l={$.data} /> : null}
 //       {d}
+const dd =new Array(10000).fill(0)
   return (
     <div class='page'>
-    ins
-      <Card class={d}>
-        asdfdsfsd {d}
-      </Card>
-      <div onClick={()=>{
-        // i= i+1
-        d = !d
-        $.setState(i)
-      }}>
-        i++ {d}
-      </div>
+    ins {num}
+    <div onClick={()=>{
+      // i= i+1
+      d = !d
+      $.setState(num)
+    }}>
+      i++ {d}
+    </div>
+    <div onClick={()=>{
+      // i= i+1
+
+      num = num + 1
+      console.log(num,'sddd')
+      $.setState(num)
+    }}>
+      i++ {d}
+    </div>
+    {
+      dd.map( (v, i) => (
+        i > 9900?
+        <Card class={d}>
+          {v} asdfdsfsd {d}
+        </Card>:null
+      ))
+    }
+      
+     
     </div>
   )
 }
