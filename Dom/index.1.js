@@ -1,8 +1,8 @@
 // 状态保存
 function addDefine( obj, key , call ) {
     Object.defineProperty(obj, key, {
-        // enumerable: false, // 可枚举
-        // configurable: false, // fales 不能再define
+        enumerable: false, // 可枚举
+        configurable: false, // fales 不能再define
         get() {
             return call()
         }
@@ -47,7 +47,6 @@ function Components( com ) {
         for(var k in attrs) {
             if ( attrs[k] instanceof Function ) {
                 addDefine( attr, k , attrs[k] )
-                // attr[k] = attrs[k]()
             } else {
                 attr[k] = attrs[k]
             }
@@ -55,7 +54,6 @@ function Components( com ) {
         for(var k in child) {
             if ( child[k] instanceof Function ) {
                 addDefine( children, k , child[k] )
-                // children[k] = child[k]()
             } else {
                 children[k] = child[k]
             }
@@ -84,24 +82,26 @@ function Components( com ) {
 // }
 // type : loaded|die
 function doneDie(type, vnode = {}) {
-    if ( vnode instanceof Function ) {
-        return doneDie(type, vnode())
-    }
-    if ( vnode instanceof Array ) {
-        vnode.map(v => doneDie(type, v))
-        return
-    }
     if ( !type || !vnode.$$type ) return
+    // console.log(type, vnode.hooks())
+    // console.log(vnode)
     if ( vnode.hooks ) {
         vnode.hooks().map( v => {
             type==='die'?v.die():v.loaded()
         })
-        vnode.children.map( v => {
-            doneDie(type, v)
-        })
     }
-    
-    
+
+    vnode.children.map( v => {
+        if ( v.$$type ) {
+            doneDie(type, v)
+            return
+        }
+
+        if ( v instanceof Array ) {
+            v.map(v => doneDie(type, v))
+            return
+        }
+    })
 }
 
 // diff 虚拟 dom
@@ -361,13 +361,12 @@ function useState(initData) {
             clearTimeout(time)
             time = setTimeout(()=>{
                 computer()
-                console.time(3)
                 const vnode = state.vnod()
                 const {sVnode} = vnode
                 // console.log({vnode, sVnode})
                 diffVnode( vnode, sVnode )
-                console.timeEnd(3)
                 // 保存最后一个组件的 hooks 
+                storageHooks()
                 clearTimeout(time)
             },0)
         }
@@ -425,9 +424,6 @@ function appCidren(Vchild, parent) {
 }
 
 function initVnode( vnode , parent ) {
-    // 第一次执行的时候，收集最后一次 hooks
-    // 每次数据更新创建元素的时候，vnode 拼接好以后
-    storageHooks()
     const {$$type ,attr, children} = vnode
     const Dom = document.createElement( $$type )
     const sVnode = {
@@ -469,7 +465,9 @@ function initVnode( vnode , parent ) {
     parent.appendChild(Dom)
     sVnode.Dom = Dom
     vnode.sVnode = sVnode
-    doneDie('loaded', vnode)
+    setTimeout(()=> {
+        doneDie('loaded', vnode)
+    },0)
 }
 
 function dom( $$type ,attr, ...child ) {
@@ -506,7 +504,7 @@ function render(fun, APP) {
     initVnode( initRender.vnode , fragment )
     APP.appendChild(fragment)
     // 收集最后一次 hooks
-    // storageHooks()
+    storageHooks()
     vnodes = null
 }
 
