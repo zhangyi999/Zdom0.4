@@ -1,4 +1,5 @@
 const path = require('path');
+const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const UglifyWebpackPlugin = require('uglifyjs-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
@@ -22,6 +23,7 @@ module.exports = {
         publicPath: '/'
     },
     plugins: [
+        new webpack.HotModuleReplacementPlugin(),
         new HtmlWebpackPlugin({
             template: path.resolve(__dirname, 'public/index.html'),
             title: 'ZDOM',
@@ -104,7 +106,8 @@ module.exports = {
     devServer: {
         contentBase: './dist',
         port: '1080',
-        host: 'localhost'
+        host: 'localhost',
+        hot: true,
     }
 }
 

@@ -384,31 +384,35 @@ function setAttribute(dom, key, attrs) {
 
 function appCidren(Vchild, parent) {
 
-    if ( Vchild instanceof Function ) {
-        const vnode = appCidren(Vchild(), parent)
-        return vnode 
-    }
-
-    if ( Vchild instanceof Array ) {
-        const fragment = document.createDocumentFragment()
-        const vns = []
-        Vchild.map( v => {
-            // console.log({v})
-            const vd = appCidren(v, fragment)
-            vns.push(vd)
-        })
-        parent.appendChild(fragment)
-        return vns
-    }
-
-    if ( Vchild instanceof Element || Vchild instanceof Text || Vchild instanceof DocumentFragment ) {
-        parent.appendChild(Vchild)
-        return Vchild
-    }
     if ( Vchild && Vchild.$$type ) {
         initVnode( Vchild , parent )
         return Vchild
     }
+
+    // if ( !(Vchild instanceof Object) ) {
+    //     parent.appendChild(document.createTextNode(Vchild!==null?Vchild:''))
+    //     return Vchild
+    // }
+    if ( Vchild instanceof Array ) {
+        const vns = []
+        const clen = Vchild.length
+        console.time(2)
+        for(let i = 0; i< clen; i++) {
+            const vnode = appCidren(Vchild[i], parent)
+            vns.push(vnode)
+        }
+        console.timeEnd(2)
+        return vns
+    }
+    if ( Vchild instanceof Function ) {
+        const vnode = appCidren(Vchild(), parent)
+        return vnode 
+    }
+    // if ( Vchild instanceof Element || Vchild instanceof Text || Vchild instanceof DocumentFragment ) {
+    //     parent.appendChild(Vchild)
+    //     return Vchild
+    // }
+
     parent.appendChild(document.createTextNode(Vchild!==null?Vchild:''))
     return Vchild
 }
@@ -447,16 +451,17 @@ function initVnode( vnode , parent ) {
         sVnode.attr[key] = val
         setAttribute( Dom, key, val )
     }
-    children.map( v => {
-        const vnode = appCidren(v, Dom)
+    const clen = children.length
+    for(let i = 0; i< clen; i++) {
+        const vnode = appCidren(children[i], Dom)
         sVnode.children.push(vnode)
-    })
+    }
     parent.appendChild(Dom)
     sVnode.Dom = Dom
     vnode.sVnode = sVnode
     setTimeout(()=> {
         doneDie('loaded', vnode)
-    },10)
+    },0)
 }
 
 function dom( $$type ,attr, ...child ) {
@@ -490,7 +495,7 @@ function render(fun, APP) {
     APP.innerHTML = ''
     initRender.vnode = fun()
     const fragment = document.createDocumentFragment()
-    initVnode( initRender.vnode , APP )
+    initVnode( initRender.vnode , fragment )
     APP.appendChild(fragment)
     // 收集最后一次 hooks
     storageHooks()
