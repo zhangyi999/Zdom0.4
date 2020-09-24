@@ -11,14 +11,14 @@ import Card  from './Card'
 let i = 1
 function po() {
   const $ = useState(9)
-  $.loaded(() => {
-      console.log('pp', this.children, this.data.l)
-    })
-  $.die(()=>{
-    console.log('p die', this.children, this.data.l)
-  })
+  // $.loaded(() => {
+  //     console.log('pp', this.children, this.props.l)
+  //   })
+  // $.die(()=>{
+  //   console.log('p die', this.children, this.props.l)
+  // })
   return (
-    <p>{$.data} {this.children} - {i} {this.data.l} </p>
+    <p>{$.state} {this.children} - {i} {this.props.l} </p>
   )
 }
 
@@ -58,10 +58,18 @@ function Index() {
 
   const sroc = useState(0)
   let dd =new Array(10000).fill(0)
+
   return (
     <div class='page'>
+      <h1>sss</h1>
+      {num % 2 ? <P l={num} /> : null}
+      {d ? <P l={num} >
+            <P l={44} />
+          </P> : null}
+      {d ? <P l={num} /> : null}
       <p onClick={()=>{
-        dd = dd.map(v => 1)
+        num = num + 1
+        dd = dd.map(v => num % 2 ? null: <P l={num}/>)
         sroc.setState()
       }}>dd</p>
       {

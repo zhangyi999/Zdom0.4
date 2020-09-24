@@ -61,7 +61,7 @@ function Components( com ) {
             }
         }
         // 开始渲染
-        const vdom = com.call({data:attr, children})
+        const vdom = com.call({props:attr, children})
         vnode = vdom
         vdom.hooks = () => hooks
         return vdom
@@ -84,6 +84,7 @@ function Components( com ) {
 // }
 // type : loaded|die
 function doneDie(type, vnode = {}) {
+    if ( !vnode ) return
     if ( vnode instanceof Function ) {
         return doneDie(type, vnode())
     }
@@ -144,6 +145,7 @@ function diffVnode( vnode, sVnode ) {
     let previousElementIndex = 0
     // console.log(children)
     children.map((v, i1) => {
+        // 这里的操作，if else 并没不是很耗性能，节点更新才是最好能的，所以要用 Fragment 挂载 children 改完在放回来
         const oldChildrenVnode = sChildren[i1]
         if ( v instanceof Function ) {
             const newChildrenVnode = v()
@@ -257,13 +259,10 @@ function diffVnode( vnode, sVnode ) {
                             ) ? previousElementIndex += 1: null
                             return
                         } 
-                        let fragment = document.createDocumentFragment();
-                        const vnodes = appCidren(newChildrenVnode, fragment);
-                        //console.log(i1 ,newArrayEmptyNumber, newArrayLength, [sVnode.Dom],[fragment],[oldChildrenDom[i1-newArrayEmptyNumber+  Math.max( newArrayLength, 0)]],{ vnodes }, { newChildrenVnode }, oldChildrenDom[i1], i1, oldChildrenDom, newArrayEmptyNumber);
-                        sChildren[i1] = vnodes;
-                        // console.log({Dom},{previousElementIndex})
-                        Dom.replaceChild(fragment, Dom.childNodes[previousElementIndex]);
-                        fragment = null
+                        
+                        sChildren[i1] = newChildrenVnode;
+                        Dom.childNodes[previousElementIndex].textContent = newChildrenVnode
+                        // 比 replaceChild 快五倍
                         previousElementIndex += 1
                     } else if((!newChildrenVnode)) {
                         Dom.childNodes[previousElementIndex].remove()
@@ -304,18 +303,13 @@ function diffVnode( vnode, sVnode ) {
             // diffVnode( newChildrenVnode, oldChildrenVnode.sVnode )
             previousElementIndex += 1
         }
-        // previousElementIndex += 1
-        // else if ( v ) {
-        //     previousElementIndex += 1
-        //     // doneDie('loaded', vnode)
-        // }
     })
     previousElementIndex = null
 }
 
 function useState(initData) {
     const obsData = {
-        data: initData,
+        state: initData,
     }
     const loadedMap = []
     const computerMap = []
@@ -333,18 +327,18 @@ function useState(initData) {
         return obsData
     })
     function loaded() {
-        loadedMap.map( v => v(obsData.data))
+        loadedMap.map( v => v(obsData.state))
     }
 
     function computer() {
-        computerMap.map( v => v(obsData.data))
+        computerMap.map( v => v(obsData.state))
     }
 
     function die() {
-        dieMap.map( v => v(obsData.data))
+        dieMap.map( v => v(obsData.state))
     }
     const state = {
-        data: obsData.data,
+        data: obsData.state,
         loaded,
         computer,
         die,
@@ -356,19 +350,14 @@ function useState(initData) {
         return fn => {
             // 合并这里 后面在写了
             fn instanceof Function ?
-                obsData.data = fn(obsData.data):
-                obsData.data = fn
+                obsData.state = fn(obsData.state):
+                obsData.state = fn
             clearTimeout(time)
             time = setTimeout(()=>{
                 computer()
-                console.time(3)
                 const vnode = state.vnod()
                 const {sVnode} = vnode
-                // console.log({vnode, sVnode})
                 diffVnode( vnode, sVnode )
-                console.timeEnd(3)
-                // 保存最后一个组件的 hooks 
-                clearTimeout(time)
             },0)
         }
     })
@@ -403,12 +392,12 @@ function appCidren(Vchild, parent) {
     if ( Vchild instanceof Array ) {
         const vns = []
         const clen = Vchild.length
-        console.time(2)
+        // console.time(2)
         for(let i = 0; i< clen; i++) {
             const vnode = appCidren(Vchild[i], parent)
             vns.push(vnode)
         }
-        console.timeEnd(2)
+        // console.timeEnd(2)
         return vns
     }
     if ( Vchild instanceof Function ) {
@@ -494,9 +483,6 @@ function render(fun, APP) {
         hooks = [...hooksList]
         hooksList = []
         initRender.hooks = hooks
-        // l.vnode = wind.vnode
-        // addDefine( l, 'vnode' , () => initRender.vnode ) 
-        // looks.push(initRender)
         // 清除 storageHooks
         storageHooks = () => {}
     }
@@ -505,8 +491,6 @@ function render(fun, APP) {
     const fragment = document.createDocumentFragment()
     initVnode( initRender.vnode , fragment )
     APP.appendChild(fragment)
-    // 收集最后一次 hooks
-    // storageHooks()
     vnodes = null
 }
 
