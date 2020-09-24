@@ -11,6 +11,7 @@ function Index() {
     <div>
       <h1>use 的封装</h1>
       <p> $.state = {$.state} </p>
+      <p> computer 计算 {$.mul} </p>
       <p onClick={
         () => {
           $.add(5)
