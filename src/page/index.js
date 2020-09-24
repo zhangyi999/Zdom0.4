@@ -69,7 +69,7 @@ function Index() {
       {d ? <P l={num} /> : null}
       <p onClick={()=>{
         num = num + 1
-        dd = dd.map(v => num % 2 ? null: <P l={num}/>)
+        dd = dd.map(v => <Card class='card'>{num}</Card> )
         sroc.setState()
       }}>dd</p>
       {

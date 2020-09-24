@@ -149,7 +149,6 @@ function diffVnode( vnode, sVnode ) {
         const oldChildrenVnode = sChildren[i1]
         if ( v instanceof Function ) {
             const newChildrenVnode = v()
-
             // console.log({newChildrenVnode, oldChildrenVnode}, 'v()')
             // 0.1 粗糙版本，只替换 不 位移
             
@@ -268,7 +267,7 @@ function diffVnode( vnode, sVnode ) {
                         Dom.childNodes[previousElementIndex].remove()
                         doneDie('die', oldChildrenVnode)
                         sChildren[i1] = newChildrenVnode;
-                    } else if (!oldChildrenVnode) {
+                    } else if (!oldChildrenVnode && oldChildrenVnode !==0 && oldChildrenVnode !== '' ) {
                         let fragment = document.createDocumentFragment()
                         // 这里 newChildrenVnode 已经 被执行 了 component 了，但是最后一个组件 没执行storageHooks()
                         const vnodes = appCidren(newChildrenVnode, fragment);
@@ -296,6 +295,8 @@ function diffVnode( vnode, sVnode ) {
                 }
             }
         } else {
+
+
             if ( v.$$type ) {
                 diffVnode( v, oldChildrenVnode.sVnode )
             }
