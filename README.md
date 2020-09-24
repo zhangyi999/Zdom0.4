@@ -1,317 +1,34 @@
-# 思路
+# Zdom
 
-使用了 react 的 hooks，获得启发，
+轻量级 hook + vue 的接口，仅作为学习用，目前还是一款玩具。
 
-可以把绑定数据的流程放在 数组，在 hooks 运行时加入列队
+配备了自己的 jsx 编译规则。
 
-任何变量都用函数包裹，通过闭包保存状态
-
-穿过组件的闭包使用 getter 绑定，给子组件传值
-
-## 数据绑定
+## API
 
 ```js
-// in index.5.js
-function Children1( ) {
-    return (
-        dom.div({ class:() => this.data.a + 1  },
-            () => this.children
-        )
-    )
-}
+import dom, { useState, Components, render } from 'dom';
 
-let Children = Components(Children1)
-
-
-let i = 1
 function index() {
+    const $ = useState(0)
+    $.loaded(()=>{})
+    $.computer(()=>{})
+    $.die(()=>{});
+    $.setState(3)
     return (
-        dom.div({},
-            Children({
-                a: () => i
-            },
-                'A'
-            )
-        )
+        <div>{$.state}</div>
     )
 }
 
-let Index = Components(index)
+const  Index = Components(index)
 
-Index()
-
-{
-    type: 'div',
-    attr: {},
-    children: [
-        {
-            type: 'div',
-            attr: {
-                class: 2
-            },
-            children: ['A']
-        }
-    ]
-}
-
-i= 2
-
-Index()
-
-{
-    type: 'div',
-    attr: {},
-    children: [
-        {
-            type: 'div',
-            attr: {
-                class: 3
-            },
-            children: ['A']
-        }
-    ]
-}
-
-const $ = Data(0)
-            .loaded(()=>{})
-            .watch({})
-            .computer(()=>{})
-            .die(()=>{});
-
-$.data === 0
-
-$.data = 1
-$.data = 19
-
-// -> $.data === 19
-```
-
-一个组件的执行顺序
-
-```js
-Index()
-
-// hooks 收集方法
-index
-    storageHooks = () => {...}
-    useData // hooksList.push
-    useData // hooksList.push
-    Children
-        storageHooks()
-        storageHooks = () => {...}
-        useData
-        Children2
-        useData
-    Children
-        useData
-        最后一次收集
-```
-
-每个 `Components` 函数有四个周期：
-
-```js
-Components(com) {
-    // 0.初始化组件，可以保存该组件组装专有的公共属性
-    return ( attr, ...children ) => {
-        // 1.开始执行执行组件，但没有开始渲染和装配组件内部 vnode
-        // 可以在这里出发 上一个组件收集 hooks，并更新 hooks 的操作
-        ... do something
-        // 2.开始执行 vnode
-        let vnode = com()
-        // 3.执行完成
-        return vnode
-    } 
-}
-  
-```
-
-## 渲染
-
-### vnode => dom
-
-### NO.1 如何传递数据修改
-
-`vnode` 通过函数保存了变量引用的值，每次数据修改时触发 `setStata` 
-
-`setStata` 先合并修改的数据，然后在触发 `render` 函数
-
-`render` 遍历该 `setStata` 控制的 `vnode` 的函数，如果有差异就修改 `dom`
-
-`dom` 修改有三个需要地方：`attr` `children` `event`
-
-`attr` 使用 `setAttr` 方法修改
-
-`event` 使用 `setEvent` 方法修改
-
-`children` 使用 `setChildren` 方法修改
-
-#### children 渲染
-
-`children` 中存在 `string` `vnode` `null` `array`
-
-1. 渲染 `new_string`：creattextnode(new_string) -> parent.repalce(new_string)
-2. 渲染 `null`：creattextnode('') -> parent.repalce('')
-3. 渲染 `array`：map -> array
-4. 渲染 `vnode`：render(vnode)
-
-`vnode` 结构：
-
-```js
-{
-    $type: 'div',
-    attr: {},
-    children: [],
-    render(){}
-}
-```
-
-`render` 执行流程：
-
-遍历 `vnode`，创建`DOM`实例，遇到 `()=>{}`，分发挂载到 `attrChange` `childrenChange` `eventChange`
-
-### 渲染流程
-
-1. 生成 `vnode`
-2. 使用 `initDom` 生成实例，并保存静态 `vnode` 
-3. 挂载到根节点
-
-### 数据修改
-
-1. 执行 `setStata`
-2. 拿到动态 `vnode`，逐个对比静态 `vnode`
-3. 改变值则 `setAttr`
-4. 简易 `diff` 算法：
-    1. `string|number|boolean` => `string|number|boolean`，`prant.replace(oldDom, document.createTextNode(string|number|boolean))`
-    2. `string|number|boolean` => `vnode`，`prant.replace(oldDom, render(vnode))`，执行 `die`
-    3. `string|number|boolean|vnode` => `Array`，`prant.replace(oldDom, render(Array))`，执行 `die`
-    4. `Array` => `string|number|boolean|vnode`，`prant.replace(oldDom[0], render(string)),remove(oldDom.slice(1))`，执行 `die`
-    5. `Array` => `Array`，使用 key 逐个对比，没有或改变就`replace(oldDom[key],new[key])`，如果没有就添加，如果老的多了就删除
-
-### diff children 算法
-
-1. 获取 `new children`
-2. 判断 `new children` 类型
-3. diff `new children` 类型
-    1. `new children`:`string|...` 
-        1. `vnode`: createTextNode , replace, die
-
-### diff 函数
-
-1. 输入 vnode & sVnode
-2. vnode 获取新数据
-3. sVnode 获取 parentDmo
-4. 对比 attr ，change attr
-5. 对比 children，遍历
-6. 类型不同直接替换，执行 sVnode.hooks
-7. 值不同直接替换，执行 sVnode.hooks
-8. 同是数组，轮询递归，vnode & sVnode
-
-
-
-```js
-dom('div',{
-    class: () => 1 + 1
-},
-    dom('h2', {
-        
-    },
-        'A',
-        Components({})
-    )
+render(
+    () => <Index />,
+    document.getElementById('app')
 )
+```
 
-// 执行顺序
-
-dom.div
-    Components
-    dom.h2
-
-// diff children 过程
-
-// sVnode 结构
-[
-    'A',    // i1 = 0 => i+
-    ['B', 'C'], // i1 = 1, i = [0,1]
-    'D', // i1 = 2
-    [], // i1 = 3, i = 0
-    null, // i1 = 4
-    ['E','F'], // i1 = 5, i = [0,1]
-    'G', // i1 = 6
-    'H' // i1 = 7
-]
-// 使用计数器
-// 每遍历【过】一个 非数组 非空 元素就 +1 ，
-// 铺平
-[
-    'A',
-    [
-    'B',
-    'C'
-    ],
-    'D',
-    [],
-    null,
-    [
-    'E',
-    'F'
-    ],
-    'G',
-    'H'
-]
-
-// 对应 sDom 结构
-[
-    'A',
-    'B',
-    'C',
-    'D',
-    'E',
-    'F',
-    'G',
-    'H'
-]
-
-// 数据如何更新的
-
-sDom
-[ 'A', 'B', 'C' ]
-
-sVnode
-['A',[], null, ['B' ,'C']]
-
-vnode
-['A' , ['A1','A2'], 'A3', [null,'C'], 'D']
-
-LastIndex = 0
-'A'|'A' -> 1:replace|no +1
-'A1'|undefind -> 2:add +1
-'A2'|undefind -> 3:add +1
-'A3'|null -> 4:add +1
-null|'B' -> 4:remove 0
-'C'|'C' -> 5:replace|no +1
-'D'|undefind -> 6:add +1
-
-DOM
-['A','A1','A2','A3','C','D']
-
-//
-sDom
-[ 'A', 'B', 'C' ]
-
-sVnode
-['A',['A1','B'], null, null, ['B' ,'C']]
-
-vnode
-['A' , 'A1', 'A3', [null,'C','C1'], 'D']
-
-LastIndex = 0
-'A'|'A' -> 1:replace|no +1
-'A1'|['A1','B'] -> 2:replace +1
-'A3'|null -> 3:add +1
-[null,'C','C1']|null -> 4:add +3
-'D'|['B' ,'C'] -> 4:replace +1
-
-DOM
-['A','A1','A3','C','D']
-
+```bash
+yarn install
+yarn dev
 ```
