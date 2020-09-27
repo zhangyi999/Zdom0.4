@@ -34,6 +34,7 @@ function Index() {
       <p onClick={$.add.bind(null, 5)}> 点这里 state + 5 </p>
       <h2>time components</h2>
       <Time></Time>
+      <h2 flex>d</h2>
       <h2 onClick={
         () => {
           console.log(show.state)
