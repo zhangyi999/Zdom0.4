@@ -476,9 +476,8 @@ function dom( $$type ,attr, ...child ) {
 }
 
 
-let initRender = {}
-
 function render(fun, APP) {
+    let initRender = {}
     vnodes = () => initRender.vnode
     storageHooks = () => {
         hooks = [...hooksList]
