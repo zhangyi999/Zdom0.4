@@ -9,6 +9,13 @@ function addDefine( obj, key , call ) {
     });
 }
 
+function flat(arr){
+    while(arr.some(item => Array.isArray(item))){
+       arr = [].concat.apply([],arr);
+    }
+    return arr;
+}
+
 // 全局 hooks
 let hooks = []
 
@@ -53,6 +60,7 @@ function Components( com ) {
             }
         }
         for(var k in child) {
+            // flat(arr)
             if ( child[k] instanceof Function ) {
                 addDefine( children, k , child[k] )
                 // children[k] = child[k]()
@@ -456,6 +464,7 @@ function initVnode( vnode , parent ) {
         const vnode = appCidren(children[i], Dom)
         sVnode.children.push(vnode)
     }
+    console.log(sVnode.children)
     parent.appendChild(Dom)
     sVnode.Dom = Dom
     vnode.sVnode = sVnode
@@ -466,12 +475,7 @@ function dom( $$type ,attr, ...child ) {
     return {
         $$type,
         attr,
-        children: child,
-        // Dom,
-        // render() {
-        //     setAttrData.map(v => v())
-        //     setChildData.map(v => v())
-        // }
+        children: child
     }
 }
 
