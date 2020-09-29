@@ -399,6 +399,7 @@ function appCidren(Vchild, parent) {
     //     return Vchild
     // }
     if ( Vchild instanceof Array ) {
+        // Vchild = flat(Vchild)
         const vns = []
         const clen = Vchild.length
         // console.time(2)
@@ -460,11 +461,13 @@ function initVnode( vnode , parent ) {
         setAttribute( Dom, key, val )
     }
     const clen = children.length
+    const vlist = []
     for(let i = 0; i< clen; i++) {
         const vnode = appCidren(children[i], Dom)
-        sVnode.children.push(vnode)
+        vlist.push(vnode)
     }
-    console.log(sVnode.children)
+    sVnode.children= flat(vlist)
+    console.log(sVnode.children,'12122')
     parent.appendChild(Dom)
     sVnode.Dom = Dom
     vnode.sVnode = sVnode
