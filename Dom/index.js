@@ -160,18 +160,35 @@ function diffVnode( vnode, sVnode ) {
             }
         }
     }
-    console.log({sVnode, vnode})
+    // console.log({sVnode, vnode})
     // 每遍历【过】一个 非数组 非空 元素就 +1 ，svnode 指针
     let previousElementIndex = 0
     // const maxLen = Math.max(children.length, sChildren.length)
     // console.log(maxLen, children, sChildren,'sChildrensChildren')
     // 遍历 newChild
-
+    let fragment = document.createDocumentFragment()
+    let addChildrens = () => {}
     function diffReplaceVnode( vnode ) {
         let newChildrenVnode = vnode
         let oldChildrenVnode = sChildren[previousElementIndex]
 
-        console.log( {newChildrenVnode},{oldChildrenVnode}, '遍历 new')
+        // console.log( {newChildrenVnode},{oldChildrenVnode}, '遍历 new')
+        if ( oldChildrenVnode === undefined || oldChildrenVnode === null  ) {
+            // console.log(newChildrenVnode, previousElementIndex , '增加 old')
+            let fragment = document.createDocumentFragment()
+            const vnodes = appCidren(vnode, fragment);
+            sChildren[previousElementIndex] = (vnodes);
+            // addChildrens = () => {
+            //     const traget = Dom.childNodes[previousElementIndex]
+            //     traget?Dom.insertBefore(fragment,traget):Dom.appendChild(fragment);
+            // }
+            const traget = Dom.childNodes[previousElementIndex]
+            traget?Dom.insertBefore(fragment,traget):Dom.appendChild(fragment);
+            fragment = null
+            previousElementIndex += 1
+            return
+        } 
+        
         if (
             !(oldChildrenVnode instanceof Object ) && 
             !(vnode instanceof Object )
@@ -182,7 +199,7 @@ function diffVnode( vnode, sVnode ) {
                     || newChildrenVnode === ''
                 ) ? previousElementIndex += 1: null
             } else {
-                console.log('替换文本')
+                // console.log('替换文本')
                 sChildren[previousElementIndex] = newChildrenVnode;
                 Dom.childNodes[previousElementIndex].textContent = newChildrenVnode
                 // 比 replaceChild 快五倍
@@ -194,18 +211,6 @@ function diffVnode( vnode, sVnode ) {
             doneDie('die', sChildren[previousElementIndex])
             // previousElementIndex += 1
             // continue
-        } else if ( oldChildrenVnode === undefined || oldChildrenVnode === null  ) {
-            // console.log(newChildrenVnode, previousElementIndex , '增加 old')
-            let fragment = document.createDocumentFragment()
-            const vnodes = appCidren(vnode, fragment);
-            sChildren[previousElementIndex] = (vnodes);
-            // insertAfter(fragment,Dom.childNodes[previousElementIndex-1])
-            const traget = Dom.childNodes[previousElementIndex]
-            // console.log(traget, Dom, ,'tragettraget')
-            traget?Dom.insertBefore(fragment,traget):Dom.appendChild(fragment);
-            fragment = null
-            previousElementIndex += 1
-
         } else if ((newChildrenVnode.$$type !== oldChildrenVnode.$$type) ) { 
             // 类型不同
             let fragment = document.createDocumentFragment()
@@ -231,7 +236,10 @@ function diffVnode( vnode, sVnode ) {
                 if ( !(sChildren[previousElementIndex]) ) continue
                 diffReplaceVnode(newChildrenVnode)
             } else if ( newChildrenVnode instanceof Array ) {
+                console.time('add el')
+
                 flat(newChildrenVnode, diffReplaceVnode);
+                console.timeEnd('add el')
             } else {
                 // console.log('非数组', newChildrenVnode, sChildren[previousElementIndex])
                 diffReplaceVnode(newChildrenVnode)
@@ -243,11 +251,11 @@ function diffVnode( vnode, sVnode ) {
     }
     // // 遍历剩余的 oldChild
     for ( let i1 = previousElementIndex; i1 < sChildren.length; i1++ ) {
-        console.log(sChildren,sChildren[i1] , '1111删除 old')
+        // console.log(sChildren,sChildren[i1] , '1111删除 old')
         sChildren[i1].sVnode.Dom.remove()
         doneDie('die', sChildren[i1])
     }
-    console.log({previousElementIndex},sChildren,'ddd')
+    // console.log({previousElementIndex},sChildren,'ddd')
     sChildren.length = previousElementIndex
     previousElementIndex = null
 }
@@ -299,10 +307,12 @@ function useState(initData) {
                 obsData.state = fn
             clearTimeout(time)
             time = setTimeout(()=>{
+                console.time('change')
                 computer()
                 const vnode = state.vnod()
                 const {sVnode} = vnode
                 diffVnode( vnode, sVnode )
+                console.timeEnd('change')
             },0)
         }
     })
@@ -432,11 +442,13 @@ function render(fun, APP) {
         // 清除 storageHooks
         storageHooks = () => {}
     }
+    console.time('load')
     APP.innerHTML = ''
     initRender.vnode = fun()
     const fragment = document.createDocumentFragment()
     initVnode( initRender.vnode , fragment )
     APP.appendChild(fragment)
+    console.timeEnd('load')
     vnodes = null
 }
 

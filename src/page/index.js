@@ -55,7 +55,7 @@ function Index() {
   const show = useState(true)
   // 注意不能使用解析赋值，这会导致无法更新UI
   // const {state} = $，这是不可以的，也是这个框架的缺点
-  const list = new Array(2).fill('5')//.map( v => (Math.random()*100 | 0)+'')
+  const list = new Array(1000).fill('5')//.map( v => (Math.random()*100 | 0)+'')
   const shreach = useState(list)
 
   // <h4>{list.join(',')}</h4>
@@ -69,13 +69,7 @@ function Index() {
   let value;
   return (
     <div>
-      <Card show>
-        {
-          [shreach.state.map( v => (
-            <p>{v}</p>
-          ))]
-        }
-      </Card>
+   
       
       <input onInput={el => {
         // 增删
@@ -89,19 +83,11 @@ function Index() {
       
       <hr />
       {
-        [shreach.state.map( v => (
-          <p>{v}</p>
-        ))]
-      }
-      
-      <hr />
-      {
         shreach.state.map( v => (
-          <p>
-            {v}
-          </p>
+          <p>{v}</p>
         ))
       }
+      
       
       
       
