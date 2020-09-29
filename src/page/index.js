@@ -66,11 +66,20 @@ function Index() {
   //     <p>{v}</p>
   //   ))
   // }
-
+  let value;
   return (
     <div>
+      <Card show>
+        {
+          [shreach.state.map( v => (
+            <p>{v}</p>
+          ))]
+        }
+      </Card>
+      
       <input onInput={el => {
         // 增删
+        value = el.value
         shreach.setState(s => list.filter( v => v === el.value))
         // 替换
         // shreach.setState(s => list.map( v => el.value))
@@ -80,9 +89,9 @@ function Index() {
       
       <hr />
       {
-        shreach.state.map( v => (
+        [shreach.state.map( v => (
           <p>{v}</p>
-        ))
+        ))]
       }
       
       <hr />

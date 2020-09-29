@@ -168,9 +168,10 @@ function diffVnode( vnode, sVnode ) {
     // 遍历 newChild
 
     function diffReplaceVnode( vnode ) {
-        console.log( vnode, '遍历 new')
         let newChildrenVnode = vnode
         let oldChildrenVnode = sChildren[previousElementIndex]
+
+        console.log( {newChildrenVnode},{oldChildrenVnode}, '遍历 new')
         if (
             !(oldChildrenVnode instanceof Object ) && 
             !(vnode instanceof Object )
@@ -188,13 +189,13 @@ function diffVnode( vnode, sVnode ) {
                 previousElementIndex += 1
             }
         } else if ( newChildrenVnode === undefined || newChildrenVnode === null  ) {
-            console.log(newChildrenVnode, previousElementIndex , '删除 --old')
+            // console.log(newChildrenVnode, previousElementIndex , '删除 --old')
             sChildren[previousElementIndex].sVnode.Dom.remove()
             doneDie('die', sChildren[previousElementIndex])
             // previousElementIndex += 1
             // continue
         } else if ( oldChildrenVnode === undefined || oldChildrenVnode === null  ) {
-            console.log(newChildrenVnode, previousElementIndex , '增加 old')
+            // console.log(newChildrenVnode, previousElementIndex , '增加 old')
             let fragment = document.createDocumentFragment()
             const vnodes = appCidren(vnode, fragment);
             sChildren[previousElementIndex] = (vnodes);
@@ -215,15 +216,10 @@ function diffVnode( vnode, sVnode ) {
             fragment = null
             previousElementIndex += 1
         } else {
+            // 相同类型的 vnode
             diffVnode( newChildrenVnode, oldChildrenVnode.sVnode )
             previousElementIndex += 1
         }
-        //     previousElementIndex += 1
-        // }
-
-        console.log(vnode,sChildren[previousElementIndex],'vnode')
-
-        // previousElementIndex += 1
     }
     for( let i1 = 0; i1 < children.length; i1 ++ ) {
         // console.log('12321', [children[i1]], i1,'12321')
@@ -233,49 +229,16 @@ function diffVnode( vnode, sVnode ) {
             // console.log(newChildrenVnode,sChildren, previousElementIndex ,'previousElementIndexpreviousElementIndexpreviousElementIndex')
             if ( (newChildrenVnode === undefined || newChildrenVnode === null) ) {
                 if ( !(sChildren[previousElementIndex]) ) continue
-                console.log(newChildrenVnode, sChildren[previousElementIndex] , '删除 1old')
-                sChildren[previousElementIndex].sVnode.Dom.remove()
-                doneDie('die', sChildren[previousElementIndex])
-                sChildren.splice(previousElementIndex,1)
-                // previousElementIndex += 1
-                
+                diffReplaceVnode(newChildrenVnode)
             } else if ( newChildrenVnode instanceof Array ) {
-                // 铺平 newChild
-                if ( newChildrenVnode.length === 0 && sChildren[previousElementIndex] ) {
-                    // 0数组不执行
-
-                    sChildren[previousElementIndex].sVnode.Dom.remove()
-                    doneDie('die', sChildren[previousElementIndex])
-                    sChildren.splice(previousElementIndex,1)
-                    console.log(
-                        newChildrenVnode,
-                        {previousElementIndex},
-                        sChildren,
-                        vnode
-                        , '空数组 不执行 flat')
-                    // diffReplaceVnode( undefined )
-                } else {
-                    flat(newChildrenVnode, diffReplaceVnode);
-                }
+                flat(newChildrenVnode, diffReplaceVnode);
             } else {
                 // console.log('非数组', newChildrenVnode, sChildren[previousElementIndex])
                 diffReplaceVnode(newChildrenVnode)
             }
         } else {
-            console.log({a:children[i1].$$type}, {sChildren:sChildren[previousElementIndex]} , i1, {previousElementIndex}, '非函数情况')
-
-            if ( children[i1].$$type ) {
-                if ( children[i1].$$type === sChildren[previousElementIndex].$$type ) {
-                    diffVnode( newChildrenVnode, sChildren[previousElementIndex].sVnode )
-                    previousElementIndex += 1
-                } else {
-                    diffReplaceVnode( newChildrenVnode )
-                }
-                
-            } else {
-                previousElementIndex += 1
-            }
-            // previousElementIndex += 1
+            // console.log({a:children[i1].$$type}, {sChildren:sChildren[previousElementIndex]} , i1, {previousElementIndex}, '非函数情况')
+            diffReplaceVnode( newChildrenVnode )
         }
     }
     // // 遍历剩余的 oldChild
@@ -284,6 +247,7 @@ function diffVnode( vnode, sVnode ) {
         sChildren[i1].sVnode.Dom.remove()
         doneDie('die', sChildren[i1])
     }
+    console.log({previousElementIndex},sChildren,'ddd')
     sChildren.length = previousElementIndex
     previousElementIndex = null
 }
