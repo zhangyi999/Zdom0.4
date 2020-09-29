@@ -179,7 +179,7 @@ function diffVnode( vnode, sVnode ) {
                             // console.log(traget, Dom, ,'tragettraget')
                             traget?Dom.insertBefore(fragment,traget):Dom.appendChild(fragment);
                             fragment = null
-                            previousElementIndex += 1
+                            // previousElementIndex += 1
                             // console.log({sChildren: sChildren[i1],i1})
 
                         }
