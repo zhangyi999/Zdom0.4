@@ -41,7 +41,7 @@ function Index() {
           show.setState(!show.state)
         }
       }> show card </h2>
-      <Card show={show.state} >ddd </Card>
+      <Card class={false} show={show.state} >ddd </Card>
     </div>
   )
 

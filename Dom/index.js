@@ -165,7 +165,7 @@ function diffVnode( vnode, sVnode ) {
                             Dom.childNodes[previousElementIndex].remove()
                             doneDie('die', oldChildrenVnode[i])
                             oldChildrenVnode.length -= 1
-                            return
+                            continue
                         }
                         if ( oldChildrenVnode[i] === undefined ) {
                             // add
@@ -204,7 +204,7 @@ function diffVnode( vnode, sVnode ) {
                             Dom.replaceChild( fragment, Dom.childNodes[previousElementIndex] )
                             fragment = null
                             previousElementIndex += 1
-                            return
+                            continue
                         }
                         
                         if ( newChildrenVnode[i].$$type !== oldChildrenVnode[i].$$type ) {
