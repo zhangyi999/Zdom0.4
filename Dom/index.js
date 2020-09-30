@@ -376,7 +376,7 @@ function useState(initData) {
                 computer()
                 const vnode = state.vnod()
                 const {sVnode} = vnode
-                console.log({vnode, sVnode})
+                // console.log({vnode, sVnode})
                 diffVnode( vnode, sVnode )
                 // console.timeEnd('change')
             },0)
