@@ -55,7 +55,6 @@ function Components( com ) {
         vnodes = () => vnode
         storageHooks = () => {
             hooks = hooksList
-            // console.log(hooks[0].loaded(),'vnod1111e===')
             hooksList = []
             // 清除 storageHooks
             storageHooks = () => {}
@@ -81,9 +80,16 @@ function Components( com ) {
         }
         // 开始渲染
         const vdom = com.call({props:attr, children})
+        if ( vdom.hooks ) {
+            console.log(vdom, vdom.hooks(),'1')
+        }
+        
         vnode = vdom
         // 挂载组件 hooks
         vdom.hooks = () => hooks
+        console.log(setTimeout(()=>{
+            console.log(vdom, vdom.hooks(),hooks)
+        },0))
         return vdom
     } 
 }
@@ -121,8 +127,19 @@ function doneDie(type, vnode = {}) {
             doneDie(type, v)
         })
     }
-    
-    
+}
+
+function doneEffect(vnode = {}) {
+    console.log(vnode, vnode.hooks, 'vnode1')
+    if ( vnode.hooks ) {
+        console.log(vnode, vnode.hooks(), 'vnode1.5')
+        vnode.hooks().map( v => {
+            
+
+        console.log(vnode, v, 'vnode2')
+            v.useEffect()
+        })
+    }
 }
 
 // diff 虚拟 dom
@@ -146,6 +163,7 @@ function doneDie(type, vnode = {}) {
 // 8. 同是数组，轮询递归，vnode & sVnode
 
 function diffVnode( vnode, sVnode ) {
+    doneEffect(vnode)
     // console.log( vnode.children[0] instanceof Function?vnode.children[0]():'', sVnode,'vnode, sVnode' )
     const {attr, children} = vnode
     const Dom = sVnode.Dom
@@ -326,6 +344,22 @@ function diffVnode( vnode, sVnode ) {
     previousElementIndex = null
 }
 
+// true 为不同 
+function diffObject ( Obj, oldObj ) {
+    if ( Obj instanceof Object ) {
+        let status;
+        for( const key in Obj ) {
+            if ( Obj[key] instanceof Object ) {
+                status = diffObject ( Obj[key], oldObj[key] )
+            } else {
+                status = Obj[key] === oldObj[key]
+            }
+            if ( status === false ) break;
+        }
+        return status
+    } else return Obj !== oldObj
+}
+
 function useState(initData) {
     const obsData = {
         state: initData,
@@ -346,6 +380,14 @@ function useState(initData) {
         dieMap.push(fn)
         return obsData
     })
+    addDefine(obsData, 'useEffect', () => (fn, filer) => {
+        effectMap.push({
+            done: fn,
+            prv: filer instanceof Function?filer():filer,
+            filer
+        })
+        return obsData
+    })
     function loaded() {
         loadedMap.map( v => v(obsData.state))
     }
@@ -358,7 +400,13 @@ function useState(initData) {
         dieMap.map( v => v(obsData.state))
     }
     function useEffect() {
-        effectMap.map( v => v(obsData.state))
+        effectMap.map( v => {
+            let prv = v.filer instanceof Function? v.filer(): v.filer;
+            if ( diffObject(prv, v.prv) ) {
+                v.prv = prv
+                v.done()
+            }
+        })
     }
     const state = {
         data: obsData.state,
@@ -368,6 +416,8 @@ function useState(initData) {
         useEffect,
         vnod: vnodes
     }
+
+    hooksList.push(state)
     // 合并 setState 后在渲染
     let time = null
     addDefine( obsData, 'setState' , () => {
@@ -388,7 +438,6 @@ function useState(initData) {
             },0)
         }
     })
-    hooksList.push(state)
 
     return obsData
 }
