@@ -82,6 +82,7 @@ function Components( com ) {
         // 开始渲染
         const vdom = com.call({props:attr, children})
         vnode = vdom
+        // 挂载组件 hooks
         vdom.hooks = () => hooks
         return vdom
     } 
@@ -332,6 +333,7 @@ function useState(initData) {
     const loadedMap = []
     const computerMap = []
     const dieMap = []
+    const effectMap = []
     addDefine(obsData, 'loaded', () => fn => {
         loadedMap.push(fn)
         return obsData
@@ -355,11 +357,15 @@ function useState(initData) {
     function die() {
         dieMap.map( v => v(obsData.state))
     }
+    function useEffect() {
+        effectMap.map( v => v(obsData.state))
+    }
     const state = {
         data: obsData.state,
         loaded,
         computer,
         die,
+        useEffect,
         vnod: vnodes
     }
     // 合并 setState 后在渲染

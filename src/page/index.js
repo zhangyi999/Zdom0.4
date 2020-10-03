@@ -84,14 +84,14 @@ function Index() {
         console.log(shreach.state)
         // show.setState(el.value)
       }} />
-      <Card class={false} show >
-        <h1>card</h1>
-        {
-          shreach.state.map( v => (
-            <p>{v}</p>
-          ))
-        }
-      </Card>
+      {
+        [shreach.state.map( v => (
+          <p>
+            <span>d</span>
+            {v}
+          </p>
+        ))]
+      }
       
       
       
