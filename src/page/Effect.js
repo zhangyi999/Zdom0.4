@@ -11,7 +11,7 @@ function Effect() {
         }
     },()=> this.props.a)
     return (
-        <span style="color:red">{$.state}</span>
+        <span style="color:red">{$.state} {this.children}</span>
     )
 }
 

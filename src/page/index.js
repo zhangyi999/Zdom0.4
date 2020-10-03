@@ -107,7 +107,13 @@ const Time = Components(time)
 // 由于 每次 hooks 都挂载到 vdom 上
 // 直接嵌套时，父组件的的 hooks 会覆盖子组件，所以这里不能用赋值，只能用 unshift
 const Effects = Components(function() {
-  return <Effect a={this.props.state}/>
+  const $ = useState("---111231231---")
+  let p = this.props.state
+  $.useEffect(()=>{
+    console.log(this.props.state, 'useEffect')
+    p = this.props.state === "ttttt"
+},()=> this.props.state)
+  return <Effect a={p}>{$.state}</Effect>
 })
 
 // useEffect 测试
@@ -117,9 +123,10 @@ function Index() {
   return (
     <div>
       <p onClick={()=>{
-        show.setState(!show.state)
+        show.setState(show.state=== "ttttt"?"aa": "ttttt")
       }}>{show.state}</p>
       <hr/>
+      <Effects state={show.state} />
       <Effects state={show.state} />
       </div>
   )

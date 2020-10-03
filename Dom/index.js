@@ -80,16 +80,14 @@ function Components( com ) {
         }
         // 开始渲染
         const vdom = com.call({props:attr, children})
-        if ( vdom.hooks ) {
-            console.log(vdom, vdom.hooks(),'1')
-        }
+        // 如果 直接返回的是 组件，则 vdom.hooks 不为空
+        const childrenHooks = vdom.hooks
         
         vnode = vdom
         // 挂载组件 hooks
-        vdom.hooks = () => hooks
-        console.log(setTimeout(()=>{
-            console.log(vdom, vdom.hooks(),hooks)
-        },0))
+        vdom.hooks = () => {
+            return childrenHooks?[...hooks,...childrenHooks()]:hooks
+        }
         return vdom
     } 
 }
@@ -130,13 +128,8 @@ function doneDie(type, vnode = {}) {
 }
 
 function doneEffect(vnode = {}) {
-    console.log(vnode, vnode.hooks, 'vnode1')
     if ( vnode.hooks ) {
-        console.log(vnode, vnode.hooks(), 'vnode1.5')
         vnode.hooks().map( v => {
-            
-
-        console.log(vnode, v, 'vnode2')
             v.useEffect()
         })
     }
