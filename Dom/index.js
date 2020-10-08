@@ -373,10 +373,10 @@ function useState(initData) {
         dieMap.push(fn)
         return obsData
     })
-    addDefine(obsData, 'useEffect', () => (fn, filer = false) => {
+    addDefine(obsData, 'useEffect', () => (fn, filer) => {
         effectMap.push({
             done: fn,
-            prv: filer instanceof Function?filer():filer,
+            prv: (filer instanceof Function?filer():filer) || false,
             filer
         })
         return obsData
