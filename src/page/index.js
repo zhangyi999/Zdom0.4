@@ -128,7 +128,7 @@ function Index() {
       <hr/>
       <Effects state={show.state} />
       <Effects state={show.state} />
-      </div>
+    </div>
   )
 }
 // {
