@@ -396,7 +396,9 @@ function useState(initData) {
         effectMap.map( v => {
             let prv = v.filer instanceof Function? v.filer(): v.filer;
             if ( diffObject(prv, v.prv) ) {
-                v.prv = prv
+                if (v.prv !== false && prv !== undefined) {
+                    v.prv = prv
+                }
                 v.done()
             }
         })
